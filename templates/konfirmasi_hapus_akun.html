@@ -1,0 +1,852 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Hapus Akun - Akuntansi{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row justify-content-center">
+        <div class="col-lg-8 col-xl-6">
+            <!-- Header dengan animasi -->
+            <div class="delete-header d-flex justify-content-between align-items-center mb-4 animate__animated animate__fadeInDown">
+                <div>
+                    <h2 class="mb-0 text-danger">
+                        <i class="bi bi-shield-exclamation me-2 animate__animated animate__pulse animate__infinite"></i>
+                        Konfirmasi Penghapusan
+                    </h2>
+                    <p class="text-muted mb-0">Verifikasi sebelum menghapus akun</p>
+                </div>
+                <a href="{% url 'daftar_akun' %}" class="btn btn-outline-secondary btn-modern">
+                    <i class="bi bi-arrow-left me-2"></i>Kembali
+                </a>
+            </div>
+
+            <!-- Warning Card dengan animasi -->
+            <div class="danger-card card border-0 shadow-lg animate__animated animate__fadeInUp">
+                <div class="card-header danger-header text-white border-0">
+                    <div class="d-flex align-items-center">
+                        <div class="warning-icon me-3">
+                            <i class="bi bi-exclamation-triangle-fill fs-3"></i>
+                        </div>
+                        <div>
+                            <h5 class="card-title mb-0 fw-bold">ZONA BAHAYA</h5>
+                            <small class="opacity-75">Tindakan tidak dapat dibatalkan</small>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card-body p-4">
+                    <!-- Akun Detail Card -->
+                    <div class="account-info-card mb-4 animate__animated animate__fadeInLeft">
+                        <div class="row align-items-center">
+                            <div class="col-auto">
+                                <div class="account-avatar">
+                                    <i class="bi bi-bank2"></i>
+                                </div>
+                            </div>
+                            <div class="col">
+                                <div class="account-details">
+                                    <h4 class="account-code mb-1">{{ akun.kode }}</h4>
+                                    <h6 class="account-name mb-2 text-muted">{{ akun.nama }}</h6>
+                                    <div class="account-type">
+                                        {% if akun.tipe == 'Aset' %}
+                                            <span class="badge badge-aset">
+                                                <i class="bi bi-cash-stack me-1"></i>{{ akun.tipe }}
+                                            </span>
+                                        {% elif akun.tipe == 'Kewajiban' %}
+                                            <span class="badge badge-kewajiban">
+                                                <i class="bi bi-credit-card me-1"></i>{{ akun.tipe }}
+                                            </span>
+                                        {% elif akun.tipe == 'Modal' %}
+                                            <span class="badge badge-modal">
+                                                <i class="bi bi-piggy-bank me-1"></i>{{ akun.tipe }}
+                                            </span>
+                                        {% elif akun.tipe == 'Pendapatan' %}
+                                            <span class="badge badge-pendapatan">
+                                                <i class="bi bi-graph-up-arrow me-1"></i>{{ akun.tipe }}
+                                            </span>
+                                        {% else %}
+                                            <span class="badge badge-beban">
+                                                <i class="bi bi-graph-down-arrow me-1"></i>{{ akun.tipe }}
+                                            </span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Status Check -->
+                    <div class="status-check mb-4 animate__animated animate__fadeInRight">
+                        {% if jurnal_count > 0 %}
+                            <div class="status-danger">
+                                <div class="d-flex align-items-center mb-3">
+                                    <div class="status-icon danger me-3">
+                                        <i class="bi bi-x-circle-fill"></i>
+                                    </div>
+                                    <div>
+                                        <h6 class="mb-0 text-danger fw-bold">TIDAK DAPAT DIHAPUS</h6>
+                                        <small class="text-muted">Akun sedang digunakan</small>
+                                    </div>
+                                </div>
+                                
+                                <div class="danger-info p-3 rounded">
+                                    <p class="mb-2">
+                                        <i class="bi bi-info-circle me-2"></i>
+                                        Akun ini digunakan dalam <strong class="text-danger">{{ jurnal_count }} transaksi</strong>
+                                    </p>
+                                    <div class="action-required">
+                                        <p class="fw-semibold mb-2">Untuk menghapus akun ini:</p>
+                                        <ul class="action-list">
+                                            <li><i class="bi bi-arrow-right me-2"></i>Hapus semua transaksi terkait</li>
+                                            <li><i class="bi bi-arrow-right me-2"></i>Atau pindahkan ke akun lain</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="action-buttons mt-4">
+                                <a href="{% url 'daftar_akun' %}" class="btn btn-outline-secondary btn-modern me-3">
+                                    <i class="bi bi-arrow-left me-2"></i>Kembali
+                                </a>
+                                <a href="{% url 'edit_akun' akun.id %}" class="btn btn-primary btn-modern">
+                                    <i class="bi bi-pencil-square me-2"></i>Edit Akun
+                                </a>
+                            </div>
+                        {% else %}
+                            <div class="status-safe">
+                                <div class="d-flex align-items-center mb-3">
+                                    <div class="status-icon safe me-3">
+                                        <i class="bi bi-check-circle-fill"></i>
+                                    </div>
+                                    <div>
+                                        <h6 class="mb-0 text-success fw-bold">AMAN UNTUK DIHAPUS</h6>
+                                        <small class="text-muted">Tidak ada transaksi terkait</small>
+                                    </div>
+                                </div>
+                                
+                                <div class="safe-info p-3 rounded mb-4">
+                                    <p class="mb-0">
+                                        <i class="bi bi-shield-check me-2 text-success"></i>
+                                        Akun ini belum digunakan dalam transaksi apapun dan aman untuk dihapus.
+                                    </p>
+                                </div>
+
+                                <!-- Form Konfirmasi dengan Animasi -->
+                                <form method="post" class="delete-form">
+                                    {% csrf_token %}
+                                    <div class="confirmation-steps">
+                                        <div class="step-item">
+                                            <div class="step-number">1</div>
+                                            <div class="step-content">
+                                                <p class="fw-semibold mb-2">Konfirmasi Pemahaman</p>
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="checkbox" id="confirmUnderstanding" required>
+                                                    <label class="form-check-label" for="confirmUnderstanding">
+                                                        Saya memahami bahwa penghapusan ini tidak dapat dibatalkan
+                                                    </label>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div class="step-item">
+                                            <div class="step-number">2</div>
+                                            <div class="step-content">
+                                                <p class="fw-semibold mb-2">Verifikasi Nama Akun</p>
+                                                <div class="verification-input">
+                                                    <input type="text" 
+                                                           class="form-control" 
+                                                           id="verifyName" 
+                                                           placeholder="Ketik nama akun untuk konfirmasi"
+                                                           data-expected="{{ akun.nama }}">
+                                                    <small class="text-muted">Ketik: <code>{{ akun.nama }}</code></small>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="action-buttons mt-4">
+                                        <a href="{% url 'daftar_akun' %}" class="btn btn-outline-secondary btn-modern me-3">
+                                            <i class="bi bi-shield-x me-2"></i>Batalkan
+                                        </a>
+                                        <button type="submit" class="btn btn-danger btn-modern" id="deleteButton" disabled>
+                                            <i class="bi bi-trash3-fill me-2"></i>
+                                            <span class="delete-text">Hapus Akun Permanen</span>
+                                            <div class="btn-loading d-none">
+                                                <div class="spinner-border spinner-border-sm me-2" role="status">
+                                                    <span class="visually-hidden">Loading...</span>
+                                                </div>
+                                                Menghapus...
+                                            </div>
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Success Modal (jika penghapusan berhasil) -->
+<div class="modal fade" id="successModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-body text-center p-5">
+                <div class="success-animation mb-4">
+                    <i class="bi bi-check-circle-fill text-success" style="font-size: 4rem;"></i>
+                </div>
+                <h4 class="text-success fw-bold mb-3">Akun Berhasil Dihapus</h4>
+                <p class="text-muted mb-4">Akun "{{ akun.nama }}" telah dihapus dari sistem.</p>
+                <button type="button" class="btn btn-success btn-modern" data-bs-dismiss="modal">
+                    <i class="bi bi-check-lg me-2"></i>Selesai
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const confirmCheck = document.getElementById('confirmUnderstanding');
+    const verifyInput = document.getElementById('verifyName');
+    const deleteButton = document.getElementById('deleteButton');
+    const deleteForm = document.querySelector('.delete-form');
+
+    function checkFormValidity() {
+        const isChecked = confirmCheck?.checked || false;
+        const expectedName = verifyInput?.dataset.expected || '';
+        const inputValue = verifyInput?.value || '';
+        // Perbaiki validasi: trim dan case-insensitive
+        const isNameValid = inputValue.trim().toLowerCase() === expectedName.trim().toLowerCase();
+
+        if (deleteButton) {
+            deleteButton.disabled = !(isChecked && isNameValid);
+            if (isChecked && isNameValid) {
+                deleteButton.classList.add('ready-to-delete');
+                deleteButton.querySelector('.delete-text').innerHTML = 
+                    '<i class="bi bi-exclamation-triangle me-2"></i>HAPUS SEKARANG';
+            } else {
+                deleteButton.classList.remove('ready-to-delete');
+                deleteButton.querySelector('.delete-text').innerHTML = 'Hapus Akun Permanen';
+            }
+        }
+    }
+
+    // Event listeners
+    confirmCheck?.addEventListener('change', checkFormValidity);
+    verifyInput?.addEventListener('input', checkFormValidity);
+
+    // Form submission with loading state
+    deleteForm?.addEventListener('submit', function(e) {
+        // Hanya preventDefault jika tombol disable
+        if (deleteButton.disabled) {
+            e.preventDefault();
+            return;
+        }
+        // Show final confirmation
+        if (!confirm('🚨 PERINGATAN TERAKHIR!\n\nApakah Anda benar-benar yakin ingin menghapus akun "' + verifyInput.dataset.expected + '"?\n\nTindakan ini TIDAK DAPAT DIBATALKAN!')) {
+            e.preventDefault();
+            return;
+        }
+        // Show loading state
+        const deleteText = deleteButton.querySelector('.delete-text');
+        const btnLoading = deleteButton.querySelector('.btn-loading');
+        deleteText.classList.add('d-none');
+        btnLoading.classList.remove('d-none');
+        deleteButton.disabled = true;
+        // Add shake animation to emphasize action
+        deleteButton.classList.add('animate__animated', 'animate__pulse');
+    });
+
+    // Add typing effect for verification
+    verifyInput?.addEventListener('input', function() {
+        const expectedName = this.dataset.expected;
+        const inputValue = this.value;
+        if (inputValue.trim().toLowerCase() === expectedName.trim().toLowerCase()) {
+            this.classList.remove('is-invalid');
+            this.classList.add('is-valid');
+            setTimeout(() => {
+                this.style.transform = 'scale(1.02)';
+                setTimeout(() => {
+                    this.style.transform = 'scale(1)';
+                }, 100);
+            }, 100);
+        } else {
+            this.classList.remove('is-valid');
+            if (inputValue.length > 0) {
+                this.classList.add('is-invalid');
+            } else {
+                this.classList.remove('is-invalid');
+            }
+        }
+    });
+
+    // Add hover effects
+    document.querySelectorAll('.btn-modern').forEach(btn => {
+        btn.addEventListener('mouseenter', function() {
+            this.style.transform = 'translateY(-2px)';
+        });
+        btn.addEventListener('mouseleave', function() {
+            this.style.transform = 'translateY(0)';
+        });
+    });
+});
+                                </div>
+                            </div>
+                            <hr>
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <strong>Nama Akun:</strong>
+                                </div>
+                                <div class="col-md-8">
+                                    {{ akun.nama }}
+                                </div>
+                            </div>
+                            <hr>
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <strong>Tipe:</strong>
+                                </div>
+                                <div class="col-md-8">
+                                    {% if akun.tipe == 'Aktiva Lancar' or akun.tipe == 'Aktiva Tetap' %}
+                                        <span class="badge bg-primary">{{ akun.tipe }}</span>
+                                    {% elif akun.tipe == 'Kewajiban Lancar' or akun.tipe == 'Kewajiban Jangka Panjang' %}
+                                        <span class="badge bg-warning">{{ akun.tipe }}</span>
+                                    {% elif akun.tipe == 'Modal' %}
+                                        <span class="badge bg-info">{{ akun.tipe }}</span>
+                                    {% elif akun.tipe == 'Pendapatan' %}
+                                        <span class="badge bg-success">{{ akun.tipe }}</span>
+                                    {% else %}
+                                        <span class="badge bg-danger">{{ akun.tipe }}</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <hr>
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <strong>Status Penggunaan:</strong>
+                                </div>
+                                <div class="col-md-8">
+                                    {% if jurnal_count > 0 %}
+                                        <span class="badge bg-danger">
+                                            <i class="bi bi-exclamation-triangle me-1"></i>
+                                            Digunakan dalam {{ jurnal_count }} transaksi
+                                        </span>
+                                    {% else %}
+                                        <span class="badge bg-success">
+                                            <i class="bi bi-check-circle me-1"></i>
+                                            Tidak digunakan dalam transaksi
+                                        </span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Cek apakah akun sudah digunakan -->
+                    {% if jurnal_count > 0 %}
+                        <div class="alert alert-danger">
+                            <h6 class="alert-heading">
+                                <i class="bi bi-x-circle me-2"></i>
+                                Tidak Dapat Dihapus
+                            </h6>
+                            <p class="mb-0">
+                                Akun ini sudah digunakan dalam <strong>{{ jurnal_count }} transaksi</strong> 
+                                dan tidak dapat dihapus. Untuk menghapus akun ini, Anda harus:
+                            </p>
+                            <ul class="mt-2 mb-0">
+                                <li>Hapus semua transaksi yang menggunakan akun ini, atau</li>
+                                <li>Pindahkan transaksi ke akun lain</li>
+                            </ul>
+                        </div>
+
+                        <div class="d-flex justify-content-between">
+                            <a href="{% url 'daftar_akun' %}" class="btn btn-secondary">
+                                <i class="bi bi-arrow-left me-2"></i>Kembali ke Daftar
+                            </a>
+                            <a href="{% url 'edit_akun' akun.id %}" class="btn btn-primary">
+                                <i class="bi bi-pencil me-2"></i>Edit Akun
+                            </a>
+                        </div>
+                    {% else %}
+                        <!-- Form Konfirmasi Hapus -->
+                        <div class="alert alert-success">
+                            <h6 class="alert-heading">
+                                <i class="bi bi-check-circle me-2"></i>
+                                Aman untuk Dihapus
+                            </h6>
+                            <p class="mb-0">
+                                Akun ini belum digunakan dalam transaksi apapun dan aman untuk dihapus.
+                            </p>
+                        </div>
+
+                        <form method="post">
+                            {% csrf_token %}
+                            <div class="form-check mb-3">
+                                <input class="form-check-input" type="checkbox" id="confirmDelete" required>
+                                <label class="form-check-label" for="confirmDelete">
+                                    Saya memahami bahwa tindakan ini tidak dapat dibatalkan
+                                </label>
+                            </div>
+
+                            <div class="d-flex justify-content-between">
+                                <a href="{% url 'daftar_akun' %}" class="btn btn-secondary">
+                                    <i class="bi bi-x-circle me-2"></i>Batal
+                                </a>
+                                <button type="submit" class="btn btn-danger" id="deleteButton" disabled>
+                                    <i class="bi bi-trash me-2"></i>Hapus Akun
+                                </button>
+                            </div>
+                        </form>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Enable delete button only when checkbox is checked
+document.getElementById('confirmDelete')?.addEventListener('change', function() {
+    document.getElementById('deleteButton').disabled = !this.checked;
+});
+
+// Double confirmation on form submit
+document.querySelector('form')?.addEventListener('submit', function(e) {
+    if (!confirm('Apakah Anda benar-benar yakin ingin menghapus akun "{{ akun.nama }}"?')) {
+        e.preventDefault();
+    }
+});
+</script>
+{% endblock %}
+
+{% block extra_css %}
+<!-- Animate.css for animations -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
+
+<style>
+    /* Modern Delete Page Styling */
+    .delete-header h2 {
+        font-weight: 700;
+        letter-spacing: -0.5px;
+    }
+
+    .danger-card {
+        border-radius: 20px !important;
+        overflow: hidden;
+        background: linear-gradient(135deg, rgba(239, 68, 68, 0.03) 0%, rgba(255, 255, 255, 1) 100%);
+        transition: all 0.3s ease;
+    }
+
+    .danger-header {
+        background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%) !important;
+        padding: 1.5rem 2rem;
+        position: relative;
+    }
+
+    .danger-header::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grain" width="100" height="100" patternUnits="userSpaceOnUse"><circle cx="20" cy="20" r="1" fill="white" opacity="0.1"/><circle cx="80" cy="40" r="1" fill="white" opacity="0.05"/><circle cx="40" cy="80" r="1" fill="white" opacity="0.1"/></pattern></defs><rect width="100" height="100" fill="url(%23grain)"/></svg>');
+        opacity: 0.3;
+    }
+
+    .warning-icon {
+        background: rgba(255, 255, 255, 0.2);
+        border-radius: 50%;
+        width: 60px;
+        height: 60px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        backdrop-filter: blur(10px);
+    }
+
+    /* Account Info Card */
+    .account-info-card {
+        background: linear-gradient(135deg, rgba(99, 102, 241, 0.05) 0%, rgba(168, 85, 247, 0.05) 100%);
+        border: 2px solid rgba(99, 102, 241, 0.1);
+        border-radius: 16px;
+        padding: 1.5rem;
+        transition: all 0.3s ease;
+    }
+
+    .account-info-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 30px rgba(99, 102, 241, 0.1);
+    }
+
+    .account-avatar {
+        width: 60px;
+        height: 60px;
+        background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
+        border-radius: 16px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 1.5rem;
+        box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3);
+    }
+
+    .account-code {
+        font-family: 'Monaco', 'Consolas', monospace;
+        font-weight: 700;
+        font-size: 1.2rem;
+        color: #374151;
+        letter-spacing: 1px;
+    }
+
+    .account-name {
+        font-size: 1rem;
+        font-weight: 500;
+    }
+
+    /* Custom Badges */
+    .badge {
+        padding: 0.5rem 1rem;
+        border-radius: 8px;
+        font-weight: 600;
+        font-size: 0.85rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .badge-aset {
+        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        color: white;
+        box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
+    }
+
+    .badge-kewajiban {
+        background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+        color: white;
+        box-shadow: 0 2px 8px rgba(245, 158, 11, 0.3);
+    }
+
+    .badge-modal {
+        background: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%);
+        color: white;
+        box-shadow: 0 2px 8px rgba(6, 182, 212, 0.3);
+    }
+
+    .badge-pendapatan {
+        background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+        color: white;
+        box-shadow: 0 2px 8px rgba(139, 92, 246, 0.3);
+    }
+
+    .badge-beban {
+        background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+        color: white;
+        box-shadow: 0 2px 8px rgba(239, 68, 68, 0.3);
+    }
+
+    /* Status Indicators */
+    .status-icon {
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+    }
+
+    .status-icon.danger {
+        background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
+        color: #dc2626;
+        border: 2px solid #fecaca;
+    }
+
+    .status-icon.safe {
+        background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+        color: #16a34a;
+        border: 2px solid #bbf7d0;
+    }
+
+    .danger-info {
+        background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
+        border: 1px solid #fecaca;
+        border-left: 4px solid #ef4444;
+    }
+
+    .safe-info {
+        background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+        border: 1px solid #bbf7d0;
+        border-left: 4px solid #22c55e;
+    }
+
+    .action-list {
+        list-style: none;
+        padding: 0;
+    }
+
+    .action-list li {
+        padding: 0.5rem 0;
+        color: #374151;
+        font-weight: 500;
+    }
+
+    /* Confirmation Steps */
+    .confirmation-steps {
+        background: #f8fafc;
+        border-radius: 12px;
+        padding: 1.5rem;
+        border: 2px dashed #e2e8f0;
+    }
+
+    .step-item {
+        display: flex;
+        align-items: flex-start;
+        margin-bottom: 1.5rem;
+    }
+
+    .step-item:last-child {
+        margin-bottom: 0;
+    }
+
+    .step-number {
+        width: 30px;
+        height: 30px;
+        background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+        color: white;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+        font-size: 0.9rem;
+        flex-shrink: 0;
+        margin-right: 1rem;
+        box-shadow: 0 2px 8px rgba(99, 102, 241, 0.3);
+    }
+
+    .step-content {
+        flex: 1;
+    }
+
+    .verification-input {
+        position: relative;
+    }
+
+    .verification-input input {
+        border-radius: 8px;
+        border: 2px solid #e5e7eb;
+        padding: 0.75rem 1rem;
+        transition: all 0.3s ease;
+        font-family: 'Monaco', 'Consolas', monospace;
+    }
+
+    .verification-input input:focus {
+        border-color: #6366f1;
+        box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+        outline: none;
+    }
+
+    .verification-input input.is-valid {
+        border-color: #10b981;
+        background-color: #f0fdf4;
+    }
+
+    .verification-input input.is-invalid {
+        border-color: #ef4444;
+        background-color: #fef2f2;
+    }
+
+    /* Modern Buttons */
+    .btn-modern {
+        border-radius: 12px;
+        padding: 0.75rem 1.5rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        transition: all 0.3s ease;
+        border: none;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .btn-modern::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+        transition: left 0.5s;
+    }
+
+    .btn-modern:hover::before {
+        left: 100%;
+    }
+
+    .btn-danger.btn-modern {
+        background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+        color: white;
+        box-shadow: 0 4px 15px rgba(239, 68, 68, 0.3);
+    }
+
+    .btn-danger.btn-modern:hover {
+        background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+        box-shadow: 0 6px 20px rgba(239, 68, 68, 0.4);
+        transform: translateY(-2px);
+    }
+
+    .btn-danger.btn-modern.ready-to-delete {
+        animation: pulse-danger 1s infinite;
+    }
+
+    @keyframes pulse-danger {
+        0% { box-shadow: 0 4px 15px rgba(239, 68, 68, 0.3); }
+        50% { box-shadow: 0 6px 25px rgba(239, 68, 68, 0.6); }
+        100% { box-shadow: 0 4px 15px rgba(239, 68, 68, 0.3); }
+    }
+
+    .btn-outline-secondary.btn-modern {
+        background: transparent;
+        border: 2px solid #e5e7eb;
+        color: #6b7280;
+    }
+
+    .btn-outline-secondary.btn-modern:hover {
+        background: #f3f4f6;
+        border-color: #6b7280;
+        color: #374151;
+    }
+
+    .btn-primary.btn-modern {
+        background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+        color: white;
+        box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3);
+    }
+
+    .btn-primary.btn-modern:hover {
+        background: linear-gradient(135deg, #5b21b6 0%, #7c3aed 100%);
+        box-shadow: 0 6px 20px rgba(99, 102, 241, 0.4);
+    }
+
+    /* Loading Animation */
+    .btn-loading {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    /* Success Modal Styling */
+    .success-animation i {
+        animation: bounceIn 0.6s ease-out;
+    }
+
+    @keyframes bounceIn {
+        0% { transform: scale(0.3); opacity: 0; }
+        50% { transform: scale(1.05); opacity: 1; }
+        100% { transform: scale(1); opacity: 1; }
+    }
+
+    /* Dark Mode Compatibility */
+    [data-theme="dark"] .danger-card {
+        background: linear-gradient(135deg, rgba(239, 68, 68, 0.1) 0%, rgba(17, 24, 39, 1) 100%);
+    }
+
+    [data-theme="dark"] .account-info-card {
+        background: linear-gradient(135deg, rgba(99, 102, 241, 0.1) 0%, rgba(168, 85, 247, 0.1) 100%);
+        border-color: rgba(99, 102, 241, 0.2);
+    }
+
+    [data-theme="dark"] .account-code {
+        color: #f3f4f6;
+    }
+
+    [data-theme="dark"] .confirmation-steps {
+        background: var(--card-bg);
+        border-color: var(--border-color);
+    }
+
+    [data-theme="dark"] .verification-input input {
+        background: var(--bg-color);
+        border-color: var(--border-color);
+        color: var(--text-color);
+    }
+
+    [data-theme="dark"] .verification-input input:focus {
+        border-color: #6366f1;
+        box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+    }
+
+    [data-theme="dark"] .danger-info {
+        background: linear-gradient(135deg, rgba(239, 68, 68, 0.1) 0%, rgba(239, 68, 68, 0.05) 100%);
+        border-color: rgba(239, 68, 68, 0.3);
+    }
+
+    [data-theme="dark"] .safe-info {
+        background: linear-gradient(135deg, rgba(34, 197, 94, 0.1) 0%, rgba(34, 197, 94, 0.05) 100%);
+        border-color: rgba(34, 197, 94, 0.3);
+    }
+
+    /* Mobile Responsive */
+    @media (max-width: 768px) {
+        .delete-header {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+
+        .delete-header .btn {
+            margin-top: 1rem;
+            width: 100%;
+        }
+
+        .account-info-card {
+            padding: 1rem;
+        }
+
+        .step-item {
+            flex-direction: column;
+        }
+
+        .step-number {
+            margin-bottom: 0.5rem;
+            margin-right: 0;
+        }
+
+        .action-buttons {
+            flex-direction: column;
+        }
+
+        .action-buttons .btn {
+            width: 100%;
+            margin-bottom: 0.5rem;
+        }
+    }
+
+    /* Accessibility Improvements */
+    .btn-modern:focus {
+        outline: 3px solid rgba(99, 102, 241, 0.5);
+        outline-offset: 2px;
+    }
+
+    .form-check-input:focus {
+        box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+    }
+
+    /* Print Styles */
+    @media print {
+        .btn, .action-buttons {
+            display: none !important;
+        }
+        
+        .danger-card {
+            box-shadow: none !important;
+            border: 2px solid #ef4444 !important;
+        }
+    }
+</style>
+{% endblock %}

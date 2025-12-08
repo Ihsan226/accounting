@@ -1,0 +1,465 @@
+{% extends 'base.html' %}
+
+{% block title %}Jurnal Umum - Akuntansi{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h1 class="page-title">Jurnal Umum</h1>
+        <p class="page-subtitle">Catatan semua transaksi keuangan secara kronologis</p>
+    </div>
+    <div>
+        <a href="/input/" class="btn btn-primary btn-action">
+            <i class="bi bi-plus-circle me-2"></i>Tambah Transaksi
+        </a>
+    </div>
+</div>
+
+<!-- Filter Section -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-3">
+            <div class="col-md-3">
+                <label class="form-label fw-semibold">Dari Tanggal</label>
+                <input type="date" class="form-control" name="start_date" value="{{ request.GET.start_date }}">
+            </div>
+            <div class="col-md-3">
+                <label class="form-label fw-semibold">Sampai Tanggal</label>
+                <input type="date" class="form-control" name="end_date" value="{{ request.GET.end_date }}">
+            </div>
+            <div class="col-md-4">
+                <label class="form-label fw-semibold">Cari Deskripsi</label>
+                <input type="text" class="form-control" name="search" placeholder="Cari dalam deskripsi..." value="{{ request.GET.search }}">
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">&nbsp;</label>
+                <div class="d-grid">
+                    <button type="submit" class="btn btn-outline-primary">
+                        <i class="bi bi-search me-2"></i>Filter
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Journal Table -->
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="card-title mb-0">
+            <i class="bi bi-journal-text me-2"></i>
+            Daftar Jurnal
+        </h5>
+        <div class="d-flex gap-2">
+            <a href="{% url 'jurnal_umum_pdf' %}" class="btn btn-sm btn-outline-danger" target="_blank">
+                <i class="bi bi-file-earmark-pdf me-1"></i>PDF
+            </a>
+            <button class="btn btn-sm btn-outline-success" onclick="exportToExcel()">
+                <i class="bi bi-file-earmark-excel me-1"></i>Excel
+            </button>
+            <button class="btn btn-sm btn-outline-info" onclick="printJournal()">
+                <i class="bi bi-printer me-1"></i>Print
+            </button>
+        </div>
+    </div>
+    <div class="card-body p-0">
+        {% if jurnal %}
+        <div class="table-responsive">
+            <table class="table table-hover mb-0" id="journalTable">
+                <thead class="table-primary">
+                    <tr>
+                        <th width="10%">Tanggal</th>
+                        <th width="10%">No. Ref</th>
+                        <th width="35%">Deskripsi</th>
+                        <th width="20%">Akun</th>
+                        <th width="12.5%" class="text-end">Debet (Rp)</th>
+                        <th width="12.5%" class="text-end">Kredit (Rp)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% regroup jurnal by transaksi as grouped_jurnal %}
+                    {% for group in grouped_jurnal %}
+                        {% for j in group.list %}
+                        <tr class="{% cycle 'table-light' '' %}">
+                            {% if forloop.first %}
+                            <td rowspan="{{ group.list|length }}" class="align-middle">
+                                <span class="fw-semibold">{{ group.grouper.tanggal|date:"d/m/Y" }}</span>
+                            </td>
+                            <td rowspan="{{ group.list|length }}" class="align-middle">
+                                <span class="badge bg-secondary">AUTO-{{ group.grouper.id }}</span>
+                            </td>
+                            <td rowspan="{{ group.list|length }}" class="align-middle">
+                                <div class="fw-semibold">{{ group.grouper.deskripsi }}</div>
+                            </td>
+                            {% endif %}
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    {% if j.debit > 0 %}
+                                        <i class="bi bi-arrow-up-circle text-success me-2"></i>
+                                    {% else %}
+                                        <i class="bi bi-arrow-down-circle text-danger me-2"></i>
+                                    {% endif %}
+                                    <span>{{ j.akun.kode }} - {{ j.akun.nama }}</span>
+                                </div>
+                            </td>
+                            <td class="text-end">
+                                {% if j.debit > 0 %}
+                                    <span class="fw-semibold text-success">{{ j.debit|floatformat:0 }}</span>
+                                {% else %}
+                                    <span class="text-muted">-</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-end">
+                                {% if j.kredit > 0 %}
+                                    <span class="fw-semibold text-danger">{{ j.kredit|floatformat:0 }}</span>
+                                {% else %}
+                                    <span class="text-muted">-</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                        <!-- Separator row -->
+                        <tr>
+                            <td colspan="6" class="border-0 py-1"></td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+                <tfoot class="table-secondary">
+                    <tr>
+                        <th colspan="4" class="text-end">TOTAL:</th>
+                        <th class="text-end">
+                            <span class="fw-bold text-success">
+                                Rp {{ total_debet|default:0|floatformat:0 }}
+                            </span>
+                        </th>
+                        <th class="text-end">
+                            <span class="fw-bold text-danger">
+                                Rp {{ total_kredit|default:0|floatformat:0 }}
+                            </span>
+                        </th>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+        
+        <!-- Pagination -->
+        {% if is_paginated %}
+        <div class="card-footer">
+            <nav aria-label="Journal pagination">
+                <ul class="pagination justify-content-center mb-0">
+                    {% if page_obj.has_previous %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page=1{% if request.GET.start_date %}&start_date={{ request.GET.start_date }}{% endif %}{% if request.GET.end_date %}&end_date={{ request.GET.end_date }}{% endif %}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}">
+                                <i class="bi bi-chevron-double-left"></i>
+                            </a>
+                        </li>
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if request.GET.start_date %}&start_date={{ request.GET.start_date }}{% endif %}{% if request.GET.end_date %}&end_date={{ request.GET.end_date }}{% endif %}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}">
+                                <i class="bi bi-chevron-left"></i>
+                            </a>
+                        </li>
+                    {% endif %}
+                    
+                    <li class="page-item active">
+                        <span class="page-link">
+                            {{ page_obj.number }} dari {{ page_obj.paginator.num_pages }}
+                        </span>
+                    </li>
+                    
+                    {% if page_obj.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if request.GET.start_date %}&start_date={{ request.GET.start_date }}{% endif %}{% if request.GET.end_date %}&end_date={{ request.GET.end_date }}{% endif %}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}">
+                                <i class="bi bi-chevron-right"></i>
+                            </a>
+                        </li>
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if request.GET.start_date %}&start_date={{ request.GET.start_date }}{% endif %}{% if request.GET.end_date %}&end_date={{ request.GET.end_date }}{% endif %}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}">
+                                <i class="bi bi-chevron-double-right"></i>
+                            </a>
+                        </li>
+                    {% endif %}
+                </ul>
+            </nav>
+        </div>
+        {% endif %}
+        
+        {% else %}
+        <div class="text-center py-5">
+            <i class="bi bi-journal-x fs-1 text-muted mb-3"></i>
+            <h5 class="text-muted">Belum Ada Data Jurnal</h5>
+            <p class="text-muted">Mulai dengan menambahkan transaksi pertama Anda.</p>
+            <a href="/input/" class="btn btn-primary">
+                <i class="bi bi-plus-circle me-2"></i>Tambah Transaksi
+            </a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Summary Cards -->
+{% if jurnal %}
+<div class="row mt-4">
+    <div class="col-md-4 mb-3">
+        <div class="card bg-light">
+            <div class="card-body text-center">
+                <i class="bi bi-receipt fs-2 text-primary mb-2"></i>
+                <h5 class="card-title">Total Transaksi</h5>
+                <h3 class="text-primary mb-0">{{ total_transaksi|default:0 }}</h3>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4 mb-3">
+        <div class="card bg-light">
+            <div class="card-body text-center">
+                <i class="bi bi-calculator fs-2 text-success mb-2"></i>
+                <h5 class="card-title">Total Debet</h5>
+                <h3 class="text-success mb-0">Rp {{ total_debet|default:0|floatformat:0 }}</h3>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4 mb-3">
+        <div class="card bg-light">
+            <div class="card-body text-center">
+                <i class="bi bi-calculator fs-2 text-danger mb-2"></i>
+                <h5 class="card-title">Total Kredit</h5>
+                <h3 class="text-danger mb-0">Rp {{ total_kredit|default:0|floatformat:0 }}</h3>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Dark mode styling for Jurnal Umum */
+    [data-theme="dark"] h1,
+    [data-theme="dark"] h2,
+    [data-theme="dark"] h3,
+    [data-theme="dark"] h4,
+    [data-theme="dark"] h5,
+    [data-theme="dark"] h6 {
+        color: var(--text-color) !important;
+    }
+    
+    [data-theme="dark"] .text-primary {
+        color: var(--primary-color) !important;
+    }
+    
+    [data-theme="dark"] .text-muted {
+        color: var(--muted-text) !important;
+    }
+    
+    [data-theme="dark"] .page-title {
+        color: var(--text-color) !important;
+    }
+    
+    [data-theme="dark"] .page-subtitle {
+        color: var(--muted-text) !important;
+    }
+    
+    /* Button styling */
+    [data-theme="dark"] .btn-outline-danger {
+        color: #ef4444 !important;
+        border-color: #ef4444 !important;
+    }
+    
+    [data-theme="dark"] .btn-outline-danger:hover {
+        background-color: #ef4444 !important;
+        color: #ffffff !important;
+    }
+    
+    [data-theme="dark"] .btn-outline-success {
+        color: #10b981 !important;
+        border-color: #10b981 !important;
+    }
+    
+    [data-theme="dark"] .btn-outline-success:hover {
+        background-color: #10b981 !important;
+        color: #ffffff !important;
+    }
+    
+    [data-theme="dark"] .btn-outline-info {
+        color: #06b6d4 !important;
+        border-color: #06b6d4 !important;
+    }
+    
+    [data-theme="dark"] .btn-outline-info:hover {
+        background-color: #06b6d4 !important;
+        color: #ffffff !important;
+    }
+    
+    [data-theme="dark"] .btn-outline-primary {
+        color: var(--primary-color) !important;
+        border-color: var(--primary-color) !important;
+    }
+    
+    [data-theme="dark"] .btn-outline-primary:hover {
+        background-color: var(--primary-color) !important;
+        color: #ffffff !important;
+    }
+    
+    /* Card styling */
+    [data-theme="dark"] .card-header {
+        background-color: var(--card-bg) !important;
+        border-bottom-color: var(--border-color) !important;
+    }
+    
+    [data-theme="dark"] .card-header .card-title {
+        color: var(--text-color) !important;
+        font-weight: 600;
+    }
+    
+    /* Form styling */
+    [data-theme="dark"] .form-label {
+        color: var(--text-color) !important;
+        font-weight: 500;
+    }
+    
+    /* Table styling */
+    [data-theme="dark"] .table-primary th {
+        background-color: var(--primary-color) !important;
+        color: #ffffff !important;
+        border-color: var(--border-color) !important;
+    }
+    
+    [data-theme="dark"] .table-light {
+        background-color: var(--bg-color) !important;
+    }
+    
+    [data-theme="dark"] .table-hover tbody tr:hover {
+        background-color: var(--card-bg) !important;
+        color: var(--text-color) !important;
+    }
+    
+    [data-theme="dark"] .table tbody td {
+        color: var(--accent-text) !important;
+        border-color: var(--border-color) !important;
+    }
+    
+    [data-theme="dark"] .table tbody td strong {
+        color: var(--text-color) !important;
+    }
+    
+    [data-theme="dark"] .table-dark th {
+        background-color: var(--bg-color) !important;
+        color: var(--text-color) !important;
+        border-color: var(--border-color) !important;
+    }
+    
+    /* Badge styling */
+    [data-theme="dark"] .badge.bg-secondary {
+        background-color: var(--card-bg) !important;
+        color: var(--text-color) !important;
+        border: 1px solid var(--border-color) !important;
+    }
+    
+    [data-theme="dark"] .badge.bg-success {
+        background-color: #10b981 !important;
+        color: #ffffff !important;
+    }
+    
+    [data-theme="dark"] .badge.bg-danger {
+        background-color: #ef4444 !important;
+        color: #ffffff !important;
+    }
+    
+    [data-theme="dark"] .badge.bg-warning {
+        background-color: #f59e0b !important;
+        color: #ffffff !important;
+    }
+    
+    [data-theme="dark"] .badge.bg-info {
+        background-color: #06b6d4 !important;
+        color: #ffffff !important;
+    }
+    
+    [data-theme="dark"] .badge.bg-primary {
+        background-color: var(--primary-color) !important;
+        color: #ffffff !important;
+    }
+    
+    /* Text color adjustments */
+    [data-theme="dark"] .text-success {
+        color: #34d399 !important;
+    }
+    
+    [data-theme="dark"] .text-danger {
+        color: #f87171 !important;
+    }
+    
+    [data-theme="dark"] .fw-semibold {
+        color: var(--text-color) !important;
+    }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Set default date range to current month
+    const startDateInput = document.querySelector('input[name="start_date"]');
+    const endDateInput = document.querySelector('input[name="end_date"]');
+    
+    if (!startDateInput.value && !endDateInput.value) {
+        const now = new Date();
+        const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
+        const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+        
+        startDateInput.value = firstDay.toISOString().split('T')[0];
+        endDateInput.value = lastDay.toISOString().split('T')[0];
+    }
+});
+
+function exportToExcel() {
+    // Simple CSV export functionality
+    const table = document.getElementById('journalTable');
+    let csv = [];
+    const rows = table.querySelectorAll('tr');
+    
+    for (let i = 0; i < rows.length; i++) {
+        const row = [];
+        const cols = rows[i].querySelectorAll('td, th');
+        
+        for (let j = 0; j < cols.length; j++) {
+            row.push(cols[j].innerText);
+        }
+        csv.push(row.join(','));
+    }
+    
+    const csvFile = new Blob([csv.join('\n')], { type: 'text/csv' });
+    const downloadLink = document.createElement('a');
+    downloadLink.download = 'jurnal_umum.csv';
+    downloadLink.href = window.URL.createObjectURL(csvFile);
+    downloadLink.style.display = 'none';
+    document.body.appendChild(downloadLink);
+    downloadLink.click();
+    document.body.removeChild(downloadLink);
+}
+
+function printJournal() {
+    window.print();
+}
+
+// Print styles
+const printCSS = `
+    @media print {
+        .btn, .card-header .d-flex div:last-child, nav, .card-footer {
+            display: none !important;
+        }
+        .card {
+            border: none !important;
+            box-shadow: none !important;
+        }
+        .table th {
+            background-color: #f8f9fa !important;
+            color: #000 !important;
+        }
+    }
+`;
+
+const style = document.createElement('style');
+style.textContent = printCSS;
+document.head.appendChild(style);
+</script>
+{% endblock %}

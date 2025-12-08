@@ -1,0 +1,684 @@
+{% extends 'base.html' %}
+
+{% block title %}Input Transaksi - Akuntansi{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h1 class="page-title">Input Transaksi</h1>
+        <p class="page-subtitle">Tambahkan transaksi keuangan baru</p>
+    </div>
+    <div>
+        <a href="/" class="btn btn-outline-secondary btn-action">
+            <i class="bi bi-arrow-left me-2"></i>Kembali ke Dashboard
+        </a>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-8 col-md-10 mx-auto">
+        <div id="transaksiFormCard" class="card d-none">
+            <div class="card-header bg-primary text-white">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-plus-circle me-2"></i>
+                    Form Transaksi Baru
+                </h5>
+            </div>
+            <div class="card-body">
+                <form method="post" id="transaksiForm">
+                    {% csrf_token %}
+                    
+                    {% if form.errors %}
+                        <div class="alert alert-danger" role="alert">
+                            <i class="bi bi-exclamation-triangle me-2"></i>
+                            <strong>Terjadi kesalahan:</strong>
+                            <ul class="mb-0 mt-2">
+                                {% for field, errors in form.errors.items %}
+                                    {% for error in errors %}
+                                        <li>{{ error }}</li>
+                                    {% endfor %}
+                                {% endfor %}
+                            </ul>
+                        </div>
+                    {% endif %}
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ form.tanggal.id_for_label }}" class="form-label fw-semibold">
+                                <i class="bi bi-calendar3 me-2"></i>Tanggal Transaksi
+                            </label>
+                            <input type="date" 
+                                   class="form-control {% if form.tanggal.errors %}is-invalid{% endif %}" 
+                                   id="{{ form.tanggal.id_for_label }}" 
+                                   name="{{ form.tanggal.name }}" 
+                                   value="{{ form.tanggal.value|default:'' }}"
+                                   required>
+                            {% if form.tanggal.errors %}
+                                <div class="invalid-feedback">
+                                    {{ form.tanggal.errors.0 }}
+                                </div>
+                            {% endif %}
+                            <div class="form-text">Format: YYYY-MM-DD (contoh: 2024-07-12)</div>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="{{ form.deskripsi.id_for_label }}" class="form-label fw-semibold">
+                            <i class="bi bi-file-text me-2"></i>Deskripsi Transaksi
+                        </label>
+                        <textarea class="form-control {% if form.deskripsi.errors %}is-invalid{% endif %}" 
+                                  id="{{ form.deskripsi.id_for_label }}" 
+                                  name="{{ form.deskripsi.name }}" 
+                                  rows="3" 
+                                  placeholder="Masukkan deskripsi transaksi..."
+                                  required>{{ form.deskripsi.value|default:'' }}</textarea>
+                        {% if form.deskripsi.errors %}
+                            <div class="invalid-feedback">
+                                {{ form.deskripsi.errors.0 }}
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ form.akun_debet.id_for_label }}" class="form-label fw-semibold">
+                                <i class="bi bi-arrow-up-circle text-success me-2"></i>Akun Debet
+                            </label>
+                            <select class="form-select {% if form.akun_debet.errors %}is-invalid{% endif %}" 
+                                    id="{{ form.akun_debet.id_for_label }}" 
+                                    name="{{ form.akun_debet.name }}" 
+                                    required>
+                                <option value="">Pilih Akun Debet</option>
+                                {% for choice in form.akun_debet.field.choices %}
+                                    {% if choice.0 %}
+                                    <option value="{{ choice.0 }}" {% if form.akun_debet.value == choice.0 %}selected{% endif %}>
+                                        {{ choice.1 }}
+                                    </option>
+                                    {% endif %}
+                                {% endfor %}
+                            </select>
+                            {% if form.akun_debet.errors %}
+                                <div class="invalid-feedback">
+                                    {{ form.akun_debet.errors.0 }}
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ form.akun_kredit.id_for_label }}" class="form-label fw-semibold">
+                                <i class="bi bi-arrow-down-circle text-danger me-2"></i>Akun Kredit
+                            </label>
+                            <select class="form-select {% if form.akun_kredit.errors %}is-invalid{% endif %}" 
+                                    id="{{ form.akun_kredit.id_for_label }}" 
+                                    name="{{ form.akun_kredit.name }}" 
+                                    required>
+                                <option value="">Pilih Akun Kredit</option>
+                                {% for choice in form.akun_kredit.field.choices %}
+                                    {% if choice.0 %}
+                                    <option value="{{ choice.0 }}" {% if form.akun_kredit.value == choice.0 %}selected{% endif %}>
+                                        {{ choice.1 }}
+                                    </option>
+                                    {% endif %}
+                                {% endfor %}
+                            </select>
+                            {% if form.akun_kredit.errors %}
+                                <div class="invalid-feedback">
+                                    {{ form.akun_kredit.errors.0 }}
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <label for="{{ form.jumlah.id_for_label }}" class="form-label fw-semibold">
+                            <i class="bi bi-currency-dollar me-2"></i>Jumlah (Rp)
+                        </label>
+                        <div class="input-group">
+                            <span class="input-group-text">Rp</span>
+                            <input type="number" 
+                                   class="form-control {% if form.jumlah.errors %}is-invalid{% endif %}" 
+                                   id="{{ form.jumlah.id_for_label }}" 
+                                   name="{{ form.jumlah.name }}" 
+                                   value="{{ form.jumlah.value|default:'' }}"
+                                   step="0.01" 
+                                   min="0" 
+                                   placeholder="0.00"
+                                   required>
+                            {% if form.jumlah.errors %}
+                                <div class="invalid-feedback">
+                                    {{ form.jumlah.errors.0 }}
+                                </div>
+                            {% endif %}
+                        </div>
+                        <div class="form-text">Masukkan jumlah dalam Rupiah</div>
+                    </div>
+
+                    <div class="d-flex gap-2 justify-content-end">
+                        <a href="/" class="btn btn-outline-secondary btn-action">
+                            <i class="bi bi-x-circle me-2"></i>Batal
+                        </a>
+                        <button type="submit" class="btn btn-primary btn-action">
+                            <i class="bi bi-check-circle-fill me-2"></i>Simpan Transaksi
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="mt-4">
+    <div class="d-flex justify-content-end mb-2">
+        <button id="btnToggleForm" class="btn btn-primary">
+            <i class="bi bi-plus-circle me-2"></i>
+            Tambah Transaksi
+        </button>
+    </div>
+    <div class="card mb-4">
+        <div class="card-header">
+            <h6 class="mb-0">Daftar Transaksi (Inline)</h6>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover" id="transaksiTable">
+                    <thead>
+                        <tr>
+                            <th>Tanggal</th>
+                            <th>Deskripsi</th>
+                            <th>Akun Debet</th>
+                            <th>Akun Kredit</th>
+                            <th>Jumlah</th>
+                            <th>Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Rows will be injected by JS -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-body">
+            <h6 class="card-title text-muted mb-3">
+                <i class="bi bi-info-circle me-2"></i>Panduan Input Transaksi
+            </h6>
+            <div class="row">
+                <div class="col-md-6">
+                    <ul class="list-unstyled">
+                        <li class="mb-2"><i class="bi bi-check text-success me-2"></i>Pilih tanggal transaksi yang sesuai</li>
+                        <li class="mb-2"><i class="bi bi-check text-success me-2"></i>Masukkan nomor transaksi (opsional)</li>
+                        <li class="mb-2"><i class="bi bi-check text-success me-2"></i>Tulis deskripsi yang jelas</li>
+                    </ul>
+                </div>
+                <div class="col-md-6">
+                    <ul class="list-unstyled">
+                        <li class="mb-2"><i class="bi bi-check text-success me-2"></i>Pilih akun debet dan kredit yang tepat</li>
+                        <li class="mb-2"><i class="bi bi-check text-success me-2"></i>Pastikan jumlah debet = kredit</li>
+                        <li class="mb-2"><i class="bi bi-check text-success me-2"></i>Periksa kembali sebelum menyimpan</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Dark mode styling for Input Transaksi */
+    [data-theme="dark"] h1,
+    [data-theme="dark"] h2,
+    [data-theme="dark"] h3,
+    [data-theme="dark"] h4,
+    [data-theme="dark"] h5,
+    [data-theme="dark"] h6 {
+        color: var(--text-color) !important;
+    }
+    
+    [data-theme="dark"] .text-primary {
+        color: var(--primary-color) !important;
+    }
+    
+    [data-theme="dark"] .text-muted {
+        color: var(--muted-text) !important;
+    }
+    
+    [data-theme="dark"] .page-title {
+        color: var(--text-color) !important;
+    }
+    
+    [data-theme="dark"] .page-subtitle {
+        color: var(--muted-text) !important;
+    }
+    
+    /* Button styling */
+    [data-theme="dark"] .btn-primary {
+        background-color: var(--primary-color) !important;
+        border-color: var(--primary-color) !important;
+        color: #ffffff !important;
+    }
+    
+    [data-theme="dark"] .btn-primary:hover {
+        background-color: #3b82f6 !important;
+        border-color: #3b82f6 !important;
+    }
+    
+    [data-theme="dark"] .btn-success {
+        background-color: #10b981 !important;
+        border-color: #10b981 !important;
+        color: #ffffff !important;
+    }
+    
+    [data-theme="dark"] .btn-success:hover {
+        background-color: #059669 !important;
+        border-color: #059669 !important;
+    }
+    
+    [data-theme="dark"] .btn-secondary {
+        background-color: var(--card-bg) !important;
+        border-color: var(--border-color) !important;
+        color: var(--text-color) !important;
+    }
+    
+    [data-theme="dark"] .btn-secondary:hover {
+        background-color: var(--bg-color) !important;
+        color: var(--text-color) !important;
+    }
+    
+    /* Card styling */
+    [data-theme="dark"] .card-header {
+        background-color: var(--card-bg) !important;
+        border-bottom-color: var(--border-color) !important;
+    }
+    
+    [data-theme="dark"] .card-header .card-title {
+        color: var(--text-color) !important;
+        font-weight: 600;
+    }
+    
+    /* Alert styling */
+    [data-theme="dark"] .alert-success {
+        background-color: rgba(16, 185, 129, 0.1) !important;
+        border-color: #10b981 !important;
+        color: #34d399 !important;
+    }
+    
+    [data-theme="dark"] .alert-danger {
+        background-color: rgba(239, 68, 68, 0.1) !important;
+        border-color: #ef4444 !important;
+        color: #f87171 !important;
+    }
+    
+    [data-theme="dark"] .alert-warning {
+        background-color: rgba(245, 158, 11, 0.1) !important;
+        border-color: #f59e0b !important;
+        color: #fbbf24 !important;
+    }
+    
+    [data-theme="dark"] .alert-info {
+        background-color: rgba(59, 130, 246, 0.1) !important;
+        border-color: #3b82f6 !important;
+        color: #60a5fa !important;
+    }
+    
+    /* Form styling */
+    [data-theme="dark"] .form-label {
+        color: var(--text-color) !important;
+        font-weight: 500;
+    }
+    
+    [data-theme="dark"] .form-text {
+        color: var(--muted-text) !important;
+    }
+    
+    [data-theme="dark"] .invalid-feedback {
+        color: #f87171 !important;
+    }
+    
+    /* Table styling */
+    [data-theme="dark"] .table thead th {
+        background-color: var(--card-bg) !important;
+        color: var(--text-color) !important;
+        border-color: var(--border-color) !important;
+    }
+    
+    [data-theme="dark"] .table tbody td {
+        color: var(--accent-text) !important;
+        border-color: var(--border-color) !important;
+    }
+    
+    [data-theme="dark"] .table-hover tbody tr:hover {
+        background-color: var(--card-bg) !important;
+        color: var(--text-color) !important;
+    }
+    
+    /* Badge styling */
+    [data-theme="dark"] .badge.bg-secondary {
+        background-color: var(--card-bg) !important;
+        color: var(--text-color) !important;
+        border: 1px solid var(--border-color) !important;
+    }
+    
+    [data-theme="dark"] .badge.bg-success {
+        background-color: #10b981 !important;
+        color: #ffffff !important;
+    }
+    
+    [data-theme="dark"] .badge.bg-danger {
+        background-color: #ef4444 !important;
+        color: #ffffff !important;
+    }
+    
+    [data-theme="dark"] .badge.bg-warning {
+        background-color: #f59e0b !important;
+        color: #ffffff !important;
+    }
+    
+    [data-theme="dark"] .badge.bg-info {
+        background-color: #06b6d4 !important;
+        color: #ffffff !important;
+    }
+    
+    [data-theme="dark"] .badge.bg-primary {
+        background-color: var(--primary-color) !important;
+        color: #ffffff !important;
+    }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Auto-format currency input
+    const jumlahInput = document.getElementById('{{ form.jumlah.id_for_label }}');
+    if (jumlahInput) {
+        jumlahInput.addEventListener('input', function(e) {
+            let value = e.target.value;
+            // Remove non-numeric characters except decimal point
+            value = value.replace(/[^0-9.]/g, '');
+            // Ensure only one decimal point
+            const parts = value.split('.');
+            if (parts.length > 2) {
+                value = parts[0] + '.' + parts.slice(1).join('');
+            }
+            e.target.value = value;
+        });
+    }
+
+    // Set today's date as default
+    const tanggalInput = document.getElementById('{{ form.tanggal.id_for_label }}');
+    if (tanggalInput && !tanggalInput.value) {
+        const today = new Date().toISOString().split('T')[0];
+        tanggalInput.value = today;
+    }
+
+    // Improve dropdown behavior
+    const dropdowns = document.querySelectorAll('.form-select');
+    dropdowns.forEach(function(dropdown) {
+        dropdown.addEventListener('focus', function() {
+            this.style.zIndex = '1000';
+        });
+        
+        dropdown.addEventListener('blur', function() {
+            this.style.zIndex = '10';
+        });
+        
+        // Add visual feedback for selection
+        dropdown.addEventListener('change', function() {
+            if (this.value) {
+                this.style.backgroundColor = '#f8f9fa';
+                this.style.borderColor = '#28a745';
+            } else {
+                this.style.backgroundColor = '#fff';
+                this.style.borderColor = 'var(--border-color)';
+            }
+        });
+    });
+
+    // Form validation
+    const form = document.getElementById('transaksiForm');
+    if (form) {
+        // Intercept submit to use AJAX and update inline table
+        const csrfToken = (function(){
+            function getCookie(name) {
+                let cookieValue = null;
+                if (document.cookie && document.cookie !== '') {
+                    const cookies = document.cookie.split(';');
+                    for (let i = 0; i < cookies.length; i++) {
+                        const cookie = cookies[i].trim();
+                        if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                            cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                            break;
+                        }
+                    }
+                }
+                return cookieValue;
+            }
+            return getCookie('csrftoken');
+        })();
+
+        const URL_LIST = "{% url 'transaksi_api_list' %}";
+        const URL_CREATE = "{% url 'transaksi_api_create' %}";
+        const URL_UPDATE_BASE = "{% url 'transaksi_api_update' 0 %}"; // contains /0/ which we'll replace
+        const URL_DELETE_BASE = "{% url 'transaksi_api_delete' 0 %}";
+
+        let editingId = null;
+
+        const formCard = document.getElementById('transaksiFormCard');
+        const btnToggleForm = document.getElementById('btnToggleForm');
+
+        function showForm() {
+            if (formCard) formCard.classList.remove('d-none');
+            if (btnToggleForm) {
+                btnToggleForm.innerHTML = '<i class="bi bi-x-circle me-2"></i> Tutup Form';
+            }
+            // scroll to form
+            if (formCard) formCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+
+        function hideForm() {
+            if (formCard) formCard.classList.add('d-none');
+            if (btnToggleForm) {
+                btnToggleForm.innerHTML = '<i class="bi bi-plus-circle me-2"></i> Tambah Transaksi';
+            }
+            editingId = null;
+        }
+
+        if (btnToggleForm) {
+            btnToggleForm.addEventListener('click', function(e){
+                if (formCard && formCard.classList.contains('d-none')) {
+                    // preparing a fresh form for new transaksi
+                    form.reset();
+                    // reset date to today
+                    const today = new Date().toISOString().split('T')[0];
+                    if (tanggalInput) tanggalInput.value = today;
+                    editingId = null;
+                    showForm();
+                } else {
+                    hideForm();
+                }
+            });
+        }
+
+        async function loadTransactions() {
+            try {
+                const res = await fetch(URL_LIST, { credentials: 'same-origin' });
+                if (!res.ok) throw new Error('Failed to load');
+                const data = await res.json();
+                renderTransactions(data.results || []);
+            } catch (err) {
+                console.error('Error loading transaksi:', err);
+            }
+        }
+
+        function renderTransactions(items) {
+            // Sort by tanggal (newest first)
+            items.sort((a, b) => new Date(b.tanggal) - new Date(a.tanggal));
+
+            const tbody = document.querySelector('#transaksiTable tbody');
+            tbody.innerHTML = '';
+            items.forEach(item => {
+                const tr = document.createElement('tr');
+                // Keep the original ISO tanggal value on the row for editing
+                const tanggalObj = new Date(item.tanggal);
+                // Format date as DD-MM-YYYY for display (more readable)
+                const formattedDate = tanggalObj.toLocaleDateString('id-ID', { day: '2-digit', month: '2-digit', year: 'numeric' });
+                const akunDebetText = item.akun_debet ? item.akun_debet.nama : '';
+                const akunKreditText = item.akun_kredit ? item.akun_kredit.nama : '';
+                const jumlahNumber = Number(item.jumlah) || 0;
+                const jumlahText = jumlahNumber.toLocaleString('id-ID');
+
+                tr.setAttribute('data-tanggal-iso', item.tanggal);
+                tr.innerHTML = `
+                    <td>${formattedDate}</td>
+                    <td>${item.deskripsi}</td>
+                    <td>${akunDebetText}</td>
+                    <td>${akunKreditText}</td>
+                    <td>${jumlahText}</td>
+                    <td>
+                        <button class="btn btn-sm btn-outline-primary btn-edit" data-id="${item.id}">Edit</button>
+                        <button class="btn btn-sm btn-outline-danger btn-delete" data-id="${item.id}">Hapus</button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+
+            // attach handlers
+            document.querySelectorAll('.btn-delete').forEach(btn => {
+                btn.addEventListener('click', async function(e){
+                    const id = this.dataset.id;
+                    if (!confirm('Hapus transaksi ini?')) return;
+                    try {
+                        const url = URL_DELETE_BASE.replace('/0/', `/${id}/`);
+                        const res = await fetch(url, { method: 'POST', headers: {'X-CSRFToken': csrfToken}, credentials: 'same-origin' });
+                        if (!res.ok) {
+                            const status = res.status;
+                            let txt = await res.text();
+                            try { txt = JSON.parse(txt).error || JSON.parse(txt).detail || txt; } catch(e){}
+                            console.error('Delete failed', status, txt);
+                            alert('Gagal menghapus transaksi (' + status + '):\n' + txt);
+                            return;
+                        }
+                        await loadTransactions();
+                    } catch (err) {
+                        console.error(err);
+                        alert('Gagal menghapus transaksi');
+                    }
+                });
+            });
+
+            document.querySelectorAll('.btn-edit').forEach(btn => {
+                btn.addEventListener('click', function(e){
+                    const id = this.dataset.id;
+                    const row = this.closest('tr');
+                    // Use stored ISO date attribute for form population (input[type=date] expects YYYY-MM-DD)
+                    const tanggalIso = row.getAttribute('data-tanggal-iso') || '';
+                    const deskripsi = row.children[1].textContent.trim();
+                    const akunDebetText = row.children[2].textContent.trim();
+                    const akunKreditText = row.children[3].textContent.trim();
+                    const jumlahText = row.children[4].textContent.trim().replace(/\.|,/g, '');
+
+                    // Populate form fields
+                    if (tanggalIso) {
+                        document.getElementById('{{ form.tanggal.id_for_label }}').value = tanggalIso;
+                    } else {
+                        // Fallback: try to parse displayed date
+                        const displayed = row.children[0].textContent.trim();
+                        // try parse dd-mm-yyyy or dd/mm/yyyy
+                        const m = displayed.match(/(\d{2})[-\/]?(\d{2})[-\/]?(\d{4})/);
+                        if (m) {
+                            const iso = `${m[3]}-${m[2]}-${m[1]}`;
+                            document.getElementById('{{ form.tanggal.id_for_label }}').value = iso;
+                        }
+                    }
+
+                    document.getElementById('{{ form.deskripsi.id_for_label }}').value = deskripsi;
+                    // For akun selects, try to find option text matching label
+                    selectByText('{{ form.akun_debet.id_for_label }}', akunDebetText);
+                    selectByText('{{ form.akun_kredit.id_for_label }}', akunKreditText);
+                    document.getElementById('{{ form.jumlah.id_for_label }}').value = jumlahText;
+
+                    editingId = id;
+                    // ensure form is visible when editing
+                    showForm();
+                });
+            });
+        }
+
+        function selectByText(selectId, text) {
+            const sel = document.getElementById(selectId);
+            if (!sel) return;
+            for (let i=0;i<sel.options.length;i++){
+                if (sel.options[i].text.trim() === text) {
+                    sel.selectedIndex = i; break;
+                }
+            }
+        }
+
+        form.addEventListener('submit', async function(e) {
+            e.preventDefault();
+
+            const akuntDebet = document.getElementById('{{ form.akun_debet.id_for_label }}').value;
+            const akuntKredit = document.getElementById('{{ form.akun_kredit.id_for_label }}').value;
+            if (akuntDebet === akuntKredit && akuntDebet !== '') {
+                alert('Akun debet dan kredit tidak boleh sama!');
+                return false;
+            }
+
+            const formData = new FormData(form);
+            const payload = {};
+            formData.forEach((v,k) => payload[k] = v);
+
+            try {
+                let url = URL_CREATE;
+                if (editingId) {
+                    url = URL_UPDATE_BASE.replace('/0/', `/${editingId}/`);
+                }
+
+                const res = await fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': csrfToken,
+                        'Accept': 'application/json'
+                    },
+                    body: new URLSearchParams(payload),
+                    credentials: 'same-origin'
+                });
+
+                if (!res.ok) {
+                    const status = res.status;
+                    let txt = await res.text();
+                    // try parse JSON for better message
+                    try {
+                        const j = JSON.parse(txt);
+                        txt = j.detail || j.error || JSON.stringify(j);
+                    } catch (e) {
+                        // keep txt as-is
+                    }
+                    console.error('Create/update failed', status, txt);
+                    alert('Gagal menyimpan transaksi (' + status + '):\n' + txt);
+                    return;
+                }
+
+                // success: reload list and clear form, then hide it
+                await loadTransactions();
+                form.reset();
+                // reset today's date again
+                const today = new Date().toISOString().split('T')[0];
+                document.getElementById('{{ form.tanggal.id_for_label }}').value = today;
+                editingId = null;
+                hideForm();
+            } catch (err) {
+                console.error('Error submitting:', err);
+                alert('Gagal menyimpan transaksi. Cek input dan coba lagi.');
+            }
+        });
+
+        // Initial load
+        loadTransactions();
+    }
+});
+</script>
+{% endblock %}

@@ -1,0 +1,479 @@
+{% extends 'base.html' %}
+
+{% block title %}Neraca Saldo - Akuntansi{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h1 class="page-title">Neraca Saldo</h1>
+        <p class="page-subtitle">Ringkasan saldo semua akun per periode</p>
+    </div>
+    <div class="d-flex gap-2">
+        <a href="{% url 'neraca_saldo_pdf' %}" class="btn btn-outline-danger btn-action" target="_blank">
+            <i class="bi bi-file-earmark-pdf me-2"></i>Export PDF
+        </a>
+        <button class="btn btn-outline-success btn-action" onclick="exportToExcel()">
+            <i class="bi bi-file-earmark-excel me-2"></i>Export Excel
+        </button>
+        <button class="btn btn-outline-info btn-action" onclick="printReport()">
+            <i class="bi bi-printer me-2"></i>Print
+        </button>
+    </div>
+</div>
+
+<!-- Filter Section -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-3">
+            <div class="col-md-4">
+                <label class="form-label fw-semibold">Dari Tanggal</label>
+                <input type="date" class="form-control" name="start_date" value="{{ request.GET.start_date }}">
+            </div>
+            <div class="col-md-4">
+                <label class="form-label fw-semibold">Sampai Tanggal</label>
+                <input type="date" class="form-control" name="end_date" value="{{ request.GET.end_date }}">
+            </div>
+            <div class="col-md-2">
+                <label class="form-label fw-semibold">Jenis Akun</label>
+                <select class="form-select" name="jenis">
+                    <option value="">Semua Jenis</option>
+                    <option value="Aktiva" {% if request.GET.jenis == 'Aktiva' %}selected{% endif %}>Aktiva</option>
+                    <option value="Kewajiban" {% if request.GET.jenis == 'Kewajiban' %}selected{% endif %}>Kewajiban</option>
+                    <option value="Modal" {% if request.GET.jenis == 'Modal' %}selected{% endif %}>Modal</option>
+                    <option value="Pendapatan" {% if request.GET.jenis == 'Pendapatan' %}selected{% endif %}>Pendapatan</option>
+                    <option value="Beban" {% if request.GET.jenis == 'Beban' %}selected{% endif %}>Beban</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">&nbsp;</label>
+                <div class="d-grid">
+                    <button type="submit" class="btn btn-outline-primary">
+                        <i class="bi bi-search me-2"></i>Filter
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Trial Balance Table -->
+<div class="card">
+    <div class="card-header">
+        <h5 class="card-title mb-0">
+            <i class="bi bi-clipboard-data me-2"></i>
+            Neraca Saldo per {{ request.GET.end_date|default:"Tanggal Terkini"|date:"d F Y" }}
+        </h5>
+    </div>
+    <div class="card-body p-0">
+        {% if saldo %}
+        <div class="table-responsive">
+            <table class="table table-hover mb-0" id="trialBalanceTable">
+                <thead class="table-primary">
+                    <tr>
+                        <th width="5%" class="text-center">#</th>
+                        <th width="15%">Kode Akun</th>
+                        <th width="35%">Nama Akun</th>
+                        <th width="12%" class="text-center">Jenis</th>
+                        <th width="16%" class="text-end">Debet (Rp)</th>
+                        <th width="17%" class="text-end">Kredit (Rp)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for s in saldo %}
+                    <tr class="{% cycle 'table-light' '' %}">
+                        <td class="text-center">{{ forloop.counter }}</td>
+                        <td>
+                            <span class="badge bg-secondary">{{ s.akun.kode }}</span>
+                        </td>
+                        <td>
+                            <div class="fw-semibold">{{ s.akun.nama }}</div>
+                            {% if s.akun.keterangan %}
+                                <small class="text-muted">{{ s.akun.keterangan|truncatechars:50 }}</small>
+                            {% endif %}
+                        </td>
+                        <td class="text-center">
+                            {% if s.akun.jenis == 'Aktiva' %}
+                                <span class="badge bg-success">{{ s.akun.jenis }}</span>
+                            {% elif s.akun.jenis == 'Kewajiban' %}
+                                <span class="badge bg-danger">{{ s.akun.jenis }}</span>
+                            {% elif s.akun.jenis == 'Modal' %}
+                                <span class="badge bg-primary">{{ s.akun.jenis }}</span>
+                            {% elif s.akun.jenis == 'Pendapatan' %}
+                                <span class="badge bg-info">{{ s.akun.jenis }}</span>
+                            {% elif s.akun.jenis == 'Beban' %}
+                                <span class="badge bg-warning">{{ s.akun.jenis }}</span>
+                            {% else %}
+                                <span class="badge bg-secondary">{{ s.akun.jenis }}</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-end">
+                            {% if s.debit > 0 %}
+                                <span class="fw-semibold text-success">{{ s.debit|floatformat:0 }}</span>
+                            {% else %}
+                                <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-end">
+                            {% if s.kredit > 0 %}
+                                <span class="fw-semibold text-danger">{{ s.kredit|floatformat:0 }}</span>
+                            {% else %}
+                                <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+                <tfoot class="table-dark">
+                    <tr>
+                        <th colspan="4" class="text-end fw-bold">TOTAL KESELURUHAN:</th>
+                        <th class="text-end">
+                            <span class="fw-bold text-success">
+                                Rp {{ total_debit|default:0|floatformat:0 }}
+                            </span>
+                        </th>
+                        <th class="text-end">
+                            <span class="fw-bold text-danger">
+                                Rp {{ total_kredit|default:0|floatformat:0 }}
+                            </span>
+                        </th>
+                    </tr>
+                    <tr>
+                        <th colspan="4" class="text-end">STATUS NERACA:</th>
+                        <th colspan="2" class="text-center">
+                            {% if total_debit == total_kredit %}
+                                <span class="badge bg-success fs-6">
+                                    <i class="bi bi-check-circle me-1"></i>SEIMBANG
+                                </span>
+                            {% else %}
+                                <span class="badge bg-danger fs-6">
+                                    <i class="bi bi-exclamation-triangle me-1"></i>TIDAK SEIMBANG
+                                </span>
+                                <br><small class="text-white">Selisih: Rp {{ total_debit|add:"-"|add:total_kredit|floatformat:0 }}</small>
+                            {% endif %}
+                        </th>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+        {% else %}
+        <div class="text-center py-5">
+            <i class="bi bi-clipboard-x fs-1 text-muted mb-3"></i>
+            <h5 class="text-muted">Belum Ada Data Neraca Saldo</h5>
+            <p class="text-muted">Neraca saldo akan muncul setelah Anda menambahkan transaksi.</p>
+            <a href="/input/" class="btn btn-primary">
+                <i class="bi bi-plus-circle me-2"></i>Tambah Transaksi
+            </a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Summary by Account Type -->
+{% if saldo %}
+<div class="row mt-4">
+    <div class="col-md-6 mb-3">
+        <div class="card bg-light">
+            <div class="card-header">
+                <h6 class="card-title mb-0">
+                    <i class="bi bi-pie-chart me-2"></i>
+                    Ringkasan per Jenis Akun
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-6">
+                        <h6 class="text-success">Aktiva</h6>
+                        <h5 class="mb-0">Rp {{ total_aktiva|default:0|floatformat:0 }}</h5>
+                    </div>
+                    <div class="col-6">
+                        <h6 class="text-danger">Kewajiban</h6>
+                        <h5 class="mb-0">Rp {{ total_kewajiban|default:0|floatformat:0 }}</h5>
+                    </div>
+                </div>
+                <hr>
+                <div class="row text-center">
+                    <div class="col-4">
+                        <h6 class="text-primary">Modal</h6>
+                        <h5 class="mb-0">Rp {{ total_modal|default:0|floatformat:0 }}</h5>
+                    </div>
+                    <div class="col-4">
+                        <h6 class="text-info">Pendapatan</h6>
+                        <h5 class="mb-0">Rp {{ total_pendapatan|default:0|floatformat:0 }}</h5>
+                    </div>
+                    <div class="col-4">
+                        <h6 class="text-warning">Beban</h6>
+                        <h5 class="mb-0">Rp {{ total_beban|default:0|floatformat:0 }}</h5>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6 mb-3">
+        <div class="card bg-light">
+            <div class="card-header">
+                <h6 class="card-title mb-0">
+                    <i class="bi bi-calculator me-2"></i>
+                    Verifikasi Akuntansi
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span>Persamaan Dasar:</span>
+                    <span class="fw-semibold">Aktiva = Kewajiban + Modal Awal + (Pendapatan - Beban)</span>
+                </div>
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span>Aktiva:</span>
+                    <span class="text-success fw-semibold">Rp {{ total_aktiva|default:0|floatformat:0 }}</span>
+                </div>
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span>Kewajiban + Modal Awal + (Pendapatan - Beban):</span>
+                    <span class="text-danger fw-semibold">Rp {{ rhs_total|default:0|floatformat:0 }}</span>
+                </div>
+                <hr>
+                <div class="d-flex justify-content-between align-items-center">
+                    <span class="fw-bold">Status:</span>
+                    {% if total_aktiva == rhs_total %}
+                        <span class="badge bg-success">
+                            <i class="bi bi-check-circle me-1"></i>VALID
+                        </span>
+                    {% else %}
+                        <span class="badge bg-warning">
+                            <i class="bi bi-exclamation-triangle me-1"></i>PERLU DIPERIKSA
+                        </span>
+                    {% endif %}
+                </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Dark mode styling for Neraca Saldo */
+    [data-theme="dark"] .page-title {
+        color: var(--text-color) !important;
+    }
+    
+    [data-theme="dark"] .page-subtitle {
+        color: var(--muted-text) !important;
+    }
+    
+    [data-theme="dark"] .btn-action {
+        border-width: 2px;
+        font-weight: 500;
+        transition: all 0.3s ease;
+    }
+    
+    [data-theme="dark"] .btn-outline-danger {
+        color: #ef4444 !important;
+        border-color: #ef4444 !important;
+    }
+    
+    [data-theme="dark"] .btn-outline-danger:hover {
+        background-color: #ef4444 !important;
+        color: #ffffff !important;
+    }
+    
+    [data-theme="dark"] .btn-outline-success {
+        color: #10b981 !important;
+        border-color: #10b981 !important;
+    }
+    
+    [data-theme="dark"] .btn-outline-success:hover {
+        background-color: #10b981 !important;
+        color: #ffffff !important;
+    }
+    
+    [data-theme="dark"] .btn-outline-info {
+        color: #06b6d4 !important;
+        border-color: #06b6d4 !important;
+    }
+    
+    [data-theme="dark"] .btn-outline-info:hover {
+        background-color: #06b6d4 !important;
+        color: #ffffff !important;
+    }
+    
+    [data-theme="dark"] .btn-outline-primary {
+        color: var(--primary-color) !important;
+        border-color: var(--primary-color) !important;
+    }
+    
+    [data-theme="dark"] .btn-outline-primary:hover {
+        background-color: var(--primary-color) !important;
+        color: #ffffff !important;
+    }
+    
+    /* Table styling for dark mode */
+    [data-theme="dark"] .table-primary th {
+        background-color: var(--primary-color) !important;
+        color: #ffffff !important;
+        border-color: var(--border-color) !important;
+    }
+    
+    [data-theme="dark"] .table-light {
+        background-color: var(--bg-color) !important;
+    }
+    
+    [data-theme="dark"] .table-hover tbody tr:hover {
+        background-color: var(--card-bg) !important;
+        color: var(--text-color) !important;
+    }
+    
+    [data-theme="dark"] .table-dark th {
+        background-color: var(--bg-color) !important;
+        color: var(--text-color) !important;
+        border-color: var(--border-color) !important;
+    }
+    
+    [data-theme="dark"] .table-dark .text-success {
+        color: #34d399 !important;
+    }
+    
+    [data-theme="dark"] .table-dark .text-danger {
+        color: #f87171 !important;
+    }
+    
+    /* Badge styling for dark mode */
+    [data-theme="dark"] .badge.bg-secondary {
+        background-color: var(--card-bg) !important;
+        color: var(--text-color) !important;
+        border: 1px solid var(--border-color) !important;
+    }
+    
+    [data-theme="dark"] .badge.bg-success {
+        background-color: #10b981 !important;
+        color: #ffffff !important;
+    }
+    
+    [data-theme="dark"] .badge.bg-danger {
+        background-color: #ef4444 !important;
+        color: #ffffff !important;
+    }
+    
+    [data-theme="dark"] .badge.bg-primary {
+        background-color: var(--primary-color) !important;
+        color: #ffffff !important;
+    }
+    
+    [data-theme="dark"] .badge.bg-info {
+        background-color: #06b6d4 !important;
+        color: #ffffff !important;
+    }
+    
+    [data-theme="dark"] .badge.bg-warning {
+        background-color: #f59e0b !important;
+        color: #ffffff !important;
+    }
+    
+    /* Text color adjustments */
+    [data-theme="dark"] .fw-semibold {
+        color: var(--text-color) !important;
+    }
+    
+    [data-theme="dark"] .text-success {
+        color: #34d399 !important;
+    }
+    
+    [data-theme="dark"] .text-danger {
+        color: #f87171 !important;
+    }
+    
+    [data-theme="dark"] .text-muted {
+        color: var(--muted-text) !important;
+    }
+    
+    /* Card header styling */
+    [data-theme="dark"] .card-header {
+        background-color: var(--card-bg) !important;
+        border-bottom-color: var(--border-color) !important;
+    }
+    
+    [data-theme="dark"] .card-header .card-title {
+        color: var(--text-color) !important;
+    }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Set default date range to current month
+    const startDateInput = document.querySelector('input[name="start_date"]');
+    const endDateInput = document.querySelector('input[name="end_date"]');
+    
+    if (!startDateInput.value && !endDateInput.value) {
+        const now = new Date();
+        const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
+        const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+        
+        startDateInput.value = firstDay.toISOString().split('T')[0];
+        endDateInput.value = lastDay.toISOString().split('T')[0];
+    }
+});
+
+function exportToExcel() {
+    const table = document.getElementById('trialBalanceTable');
+    if (!table) return;
+    
+    let csv = [];
+    const rows = table.querySelectorAll('tr');
+    
+    // Add header
+    csv.push('NERACA SALDO');
+    csv.push(`Per Tanggal: ${document.querySelector('input[name="end_date"]').value || 'Terkini'}`);
+    csv.push('');
+    
+    for (let i = 0; i < rows.length; i++) {
+        const row = [];
+        const cols = rows[i].querySelectorAll('td, th');
+        
+        for (let j = 0; j < cols.length; j++) {
+            row.push(cols[j].innerText.replace(/,/g, ';'));
+        }
+        csv.push(row.join(','));
+    }
+    
+    const csvFile = new Blob([csv.join('\n')], { type: 'text/csv' });
+    const downloadLink = document.createElement('a');
+    downloadLink.download = 'neraca_saldo.csv';
+    downloadLink.href = window.URL.createObjectURL(csvFile);
+    downloadLink.style.display = 'none';
+    document.body.appendChild(downloadLink);
+    downloadLink.click();
+    document.body.removeChild(downloadLink);
+}
+
+function printReport() {
+    window.print();
+}
+
+// Print styles
+const printCSS = `
+    @media print {
+        .btn, .card-header .d-flex div:last-child, .card:last-child {
+            display: none !important;
+        }
+        .card {
+            border: none !important;
+            box-shadow: none !important;
+        }
+        .table th {
+            background-color: #f8f9fa !important;
+            color: #000 !important;
+        }
+        body {
+            background-color: white !important;
+        }
+    }
+`;
+
+const style = document.createElement('style');
+style.textContent = printCSS;
+document.head.appendChild(style);
+</script>
+{% endblock %}

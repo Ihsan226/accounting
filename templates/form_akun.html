@@ -1,0 +1,388 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ title }} - Akuntansi{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Dark mode styling for Form Akun */
+    [data-theme="dark"] h2,
+    [data-theme="dark"] h5 {
+        color: var(--text-color) !important;
+    }
+    
+    [data-theme="dark"] .text-primary {
+        color: var(--primary-color) !important;
+    }
+    
+    [data-theme="dark"] .text-muted {
+        color: var(--muted-text) !important;
+    }
+    
+    [data-theme="dark"] .btn-secondary {
+        background-color: var(--card-bg) !important;
+        border-color: var(--border-color) !important;
+        color: var(--text-color) !important;
+    }
+    
+    [data-theme="dark"] .btn-secondary:hover {
+        background-color: var(--bg-color) !important;
+        color: var(--text-color) !important;
+        border-color: var(--primary-color) !important;
+    }
+    
+    /* Alert styling for dark mode */
+    [data-theme="dark"] .alert-success {
+        background-color: rgba(16, 185, 129, 0.1) !important;
+        border-color: #10b981 !important;
+        color: #34d399 !important;
+    }
+    
+    [data-theme="dark"] .alert-danger {
+        background-color: rgba(239, 68, 68, 0.1) !important;
+        border-color: #ef4444 !important;
+        color: #f87171 !important;
+    }
+    
+    [data-theme="dark"] .alert-warning {
+        background-color: rgba(245, 158, 11, 0.1) !important;
+        border-color: #f59e0b !important;
+        color: #fbbf24 !important;
+    }
+    
+    [data-theme="dark"] .alert-info {
+        background-color: rgba(59, 130, 246, 0.1) !important;
+        border-color: #3b82f6 !important;
+        color: #60a5fa !important;
+    }
+    
+    /* Card header styling */
+    [data-theme="dark"] .card-header {
+        background-color: var(--card-bg) !important;
+        border-bottom-color: var(--border-color) !important;
+    }
+    
+    [data-theme="dark"] .card-header .card-title {
+        color: var(--text-color) !important;
+        font-weight: 600;
+    }
+    
+    /* Form styling */
+    [data-theme="dark"] .form-label {
+        color: var(--text-color) !important;
+        font-weight: 500;
+    }
+    
+    [data-theme="dark"] .form-text {
+        color: var(--muted-text) !important;
+    }
+    
+    [data-theme="dark"] .invalid-feedback {
+        color: #f87171 !important;
+    }
+    
+    [data-theme="dark"] .is-invalid {
+        border-color: #ef4444 !important;
+    }
+    
+    [data-theme="dark"] .is-invalid:focus {
+        border-color: #ef4444 !important;
+        box-shadow: 0 0 0 0.2rem rgba(239, 68, 68, 0.25) !important;
+    }
+    
+    /* Button styling */
+    [data-theme="dark"] .btn-success {
+        background-color: #10b981 !important;
+        border-color: #10b981 !important;
+        color: #ffffff !important;
+    }
+    
+    [data-theme="dark"] .btn-success:hover {
+        background-color: #059669 !important;
+        border-color: #059669 !important;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+    }
+    
+    [data-theme="dark"] .btn-outline-secondary {
+        color: var(--muted-text) !important;
+        border-color: var(--border-color) !important;
+    }
+    
+    [data-theme="dark"] .btn-outline-secondary:hover {
+        background-color: var(--card-bg) !important;
+        color: var(--text-color) !important;
+    }
+    
+    /* Required field indicator */
+    [data-theme="dark"] .text-danger {
+        color: #f87171 !important;
+    }
+    
+    /* Help text styling */
+    [data-theme="dark"] small {
+        color: var(--muted-text) !important;
+    }
+    
+    /* Form validation */
+    [data-theme="dark"] .was-validated .form-control:valid {
+        border-color: #10b981 !important;
+    }
+    
+    [data-theme="dark"] .was-validated .form-control:valid:focus {
+        border-color: #10b981 !important;
+        box-shadow: 0 0 0 0.2rem rgba(16, 185, 129, 0.25) !important;
+    }
+    
+    [data-theme="dark"] .was-validated .form-select:valid {
+        border-color: #10b981 !important;
+    }
+    
+    [data-theme="dark"] .was-validated .form-select:valid:focus {
+        border-color: #10b981 !important;
+        box-shadow: 0 0 0 0.2rem rgba(16, 185, 129, 0.25) !important;
+    }
+    
+    [data-theme="dark"] .valid-feedback {
+        color: #34d399 !important;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h2 class="mb-0">
+                        <i class="bi bi-{% if akun %}pencil{% else %}plus-circle{% endif %} text-primary me-2"></i>
+                        {{ title }}
+                    </h2>
+                    <p class="text-muted mb-0">
+                        {% if akun %}
+                            Perbarui informasi akun
+                        {% else %}
+                            Tambahkan akun baru ke chart of accounts
+                        {% endif %}
+                    </p>
+                </div>
+                <a href="{% url 'daftar_akun' %}" class="btn btn-secondary">
+                    <i class="bi bi-arrow-left me-2"></i>Kembali
+                </a>
+            </div>
+
+            <!-- Messages -->
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+
+            <!-- Form Card -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-form-check me-2"></i>
+                        Informasi Akun
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form method="post" novalidate>
+                        {% csrf_token %}
+                        
+                        <div class="row">
+                            <!-- Kode Akun -->
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.kode.id_for_label }}" class="form-label fw-semibold">
+                                    <i class="bi bi-hash text-primary me-2"></i>Kode Akun
+                                </label>
+                                {{ form.kode }}
+                                {% if form.kode.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {{ form.kode.errors.0 }}
+                                    </div>
+                                {% endif %}
+                                <div class="form-text">
+                                    Contoh: 1100 (Kas), 2100 (Utang Usaha), 3100 (Modal)
+                                </div>
+                            </div>
+
+                            <!-- Tipe Akun -->
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.tipe.id_for_label }}" class="form-label fw-semibold">
+                                    <i class="bi bi-tags text-success me-2"></i>Tipe Akun
+                                </label>
+                                {{ form.tipe }}
+                                {% if form.tipe.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {{ form.tipe.errors.0 }}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Nama Akun -->
+                        <div class="mb-4">
+                            <label for="{{ form.nama.id_for_label }}" class="form-label fw-semibold">
+                                <i class="bi bi-text-left text-info me-2"></i>Nama Akun
+                            </label>
+                            {{ form.nama }}
+                            {% if form.nama.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.nama.errors.0 }}
+                                </div>
+                            {% endif %}
+                            <div class="form-text">
+                                Nama akun harus jelas dan deskriptif
+                            </div>
+                        </div>
+
+                        <!-- Info Panel untuk Edit -->
+                        {% if akun %}
+                            <div class="alert alert-info">
+                                <h6 class="alert-heading">
+                                    <i class="bi bi-info-circle me-2"></i>Informasi Akun
+                                </h6>
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <strong>Status:</strong>
+                                        {% with jurnal_count=akun.jurnal_set.count %}
+                                            {% if jurnal_count > 0 %}
+                                                <span class="badge bg-success ms-2">
+                                                    Aktif ({{ jurnal_count }} transaksi)
+                                                </span>
+                                            {% else %}
+                                                <span class="badge bg-secondary ms-2">
+                                                    Tidak Aktif
+                                                </span>
+                                            {% endif %}
+                                        {% endwith %}
+                                    </div>
+                                    <div class="col-md-6">
+                                        <strong>Dibuat:</strong> {{ akun.id|date:"d M Y" }}
+                                    </div>
+                                </div>
+                            </div>
+                        {% endif %}
+
+                        <!-- Chart of Accounts Guidelines -->
+                        <div class="card bg-light mb-4">
+                            <div class="card-body">
+                                <h6 class="card-title">
+                                    <i class="bi bi-lightbulb text-warning me-2"></i>
+                                    Panduan Kode Akun
+                                </h6>
+                                <div class="row small">
+                                    <div class="col-md-6">
+                                        <ul class="list-unstyled mb-0">
+                                            <li><strong>1xxx:</strong> Aktiva Lancar</li>
+                                            <li><strong>2xxx:</strong> Aktiva Tetap</li>
+                                            <li><strong>3xxx:</strong> Kewajiban Lancar</li>
+                                            <li><strong>4xxx:</strong> Kewajiban Jangka Panjang</li>
+                                        </ul>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <ul class="list-unstyled mb-0">
+                                            <li><strong>5xxx:</strong> Modal</li>
+                                            <li><strong>6xxx:</strong> Pendapatan</li>
+                                            <li><strong>7xxx:</strong> Beban Operasional</li>
+                                            <li><strong>8xxx:</strong> Beban Non-Operasional</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Action Buttons -->
+                        <div class="d-flex justify-content-between">
+                            <a href="{% url 'daftar_akun' %}" class="btn btn-secondary">
+                                <i class="bi bi-x-circle me-2"></i>Batal
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-{% if akun %}arrow-repeat{% else %}plus-circle{% endif %} me-2"></i>
+                                {% if akun %}Perbarui{% else %}Simpan{% endif %} Akun
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Auto-format kode akun
+document.getElementById('{{ form.kode.id_for_label }}').addEventListener('input', function() {
+    // Remove non-numeric characters
+    this.value = this.value.replace(/[^0-9]/g, '');
+    
+    // Limit to 4 digits
+    if (this.value.length > 4) {
+        this.value = this.value.substr(0, 4);
+    }
+});
+
+// Auto-suggest tipe based on kode
+document.getElementById('{{ form.kode.id_for_label }}').addEventListener('input', function() {
+    const kode = this.value;
+    const tipeSelect = document.getElementById('{{ form.tipe.id_for_label }}');
+    
+    if (kode.length > 0) {
+        const firstDigit = parseInt(kode.charAt(0));
+        let suggestedTipe = '';
+        
+        switch(firstDigit) {
+            case 1:
+                suggestedTipe = 'Aktiva Lancar';
+                break;
+            case 2:
+                suggestedTipe = 'Aktiva Tetap';
+                break;
+            case 3:
+                suggestedTipe = 'Kewajiban Lancar';
+                break;
+            case 4:
+                suggestedTipe = 'Kewajiban Jangka Panjang';
+                break;
+            case 5:
+                suggestedTipe = 'Modal';
+                break;
+            case 6:
+                suggestedTipe = 'Pendapatan';
+                break;
+            case 7:
+            case 8:
+                suggestedTipe = 'Beban';
+                break;
+        }
+        
+        if (suggestedTipe && tipeSelect.value === '') {
+            tipeSelect.value = suggestedTipe;
+        }
+    }
+});
+
+// Form validation
+document.querySelector('form').addEventListener('submit', function(e) {
+    const kode = document.getElementById('{{ form.kode.id_for_label }}').value;
+    const nama = document.getElementById('{{ form.nama.id_for_label }}').value;
+    const tipe = document.getElementById('{{ form.tipe.id_for_label }}').value;
+    
+    if (!kode || !nama || !tipe) {
+        e.preventDefault();
+        alert('Harap lengkapi semua field yang wajib diisi!');
+        return false;
+    }
+    
+    if (kode.length < 3) {
+        e.preventDefault();
+        alert('Kode akun minimal 3 digit!');
+        return false;
+    }
+});
+</script>
+{% endblock %}

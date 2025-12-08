@@ -1,0 +1,1723 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load humanize %}
+
+{% block title %}Dashboard - Akuntansi{% endblock %}
+
+{% block content %}
+<!-- Header Section -->
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h1 class="page-title mb-2">
+            <i class="bi bi-speedometer2 text-primary me-2"></i>
+            Dashboard
+        </h1>
+        <p class="page-subtitle text-muted mb-0" id="greeting-subtitle">
+            <span id="time-greeting">Selamat datang</span> di sistem akuntansi digital, {{ user.first_name|default:user.username }}!
+        </p>
+    </div>
+    <div class="d-flex align-items-center gap-3">
+        <span class="badge bg-light text-dark fs-6 px-3 py-2 border">
+            <i class="bi bi-calendar3 me-2"></i>
+            {{ "now"|date:"d F Y" }}
+        </span>
+        <span class="badge bg-primary fs-6 px-3 py-2">
+            <i class="bi bi-clock me-2"></i>
+            <span id="current-time">{{ "now"|date:"H:i" }}</span>
+        </span>
+        <!-- Tombol Profil dipindahkan ke dropdown user -->
+    </div>
+</div>
+
+<!-- Welcome Notification -->
+{% if total_transaksi == 0 %}
+<div class="welcome-notification mb-4" id="welcome-notification">
+    <div class="card border-0 shadow">
+        <div class="card-body">
+            <div class="row align-items-center">
+                <div class="col-md-1 text-center mb-3 mb-md-0">
+                    <div class="notification-icon">
+                        <i class="bi bi-info-circle"></i>
+                    </div>
+                </div>
+                <div class="col-md-10">
+                    <h5 class="notification-title mb-2">Mulai Pencatatan Akuntansi</h5>
+                    <p class="notification-text mb-3">
+                        Belum ada transaksi. Mulai dengan <a href="/input/" class="text-decoration-none fw-bold">menambah transaksi pertama</a> atau <a href="/akun/" class="text-decoration-none fw-bold">mengelola akun</a>.
+                    </p>
+                </div>
+                <div class="col-md-1 text-center">
+                    <button type="button" class="btn-close-simple" onclick="dismissNotification()">
+                        <i class="bi bi-x-lg"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Statistics Cards -->
+<div class="row mb-4">
+    <div class="col-lg-3 col-md-6 mb-3">
+        <div class="card border-0 bg-gradient-primary text-white h-100 stat-card" data-stat="transaksi">
+            <div class="card-body d-flex align-items-center">
+                <div class="flex-grow-1">
+                    <div class="d-flex align-items-center mb-2">
+                        <i class="bi bi-receipt fs-4 me-2 opacity-75 stat-icon"></i>
+                        <h6 class="card-title mb-0 opacity-75">Total Transaksi</h6>
+                    </div>
+                    <div class="stat-number mb-1">
+                        <div class="number-amount">{{ total_transaksi|default:"0" }}</div>
+                    </div>
+                    <small class="opacity-75">
+                        {% if total_transaksi > 0 %}
+                            <i class="bi bi-arrow-up"></i> Aktif
+                        {% else %}
+                            <i class="bi bi-dash-circle"></i> Belum ada
+                        {% endif %}
+                    </small>
+                </div>
+                <div class="ms-3">
+                    <div class="bg-white bg-opacity-25 rounded-circle p-3 stat-circle">
+                        <i class="bi bi-graph-up fs-3"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-3 col-md-6 mb-3">
+        <div class="card border-0 bg-gradient-success text-white h-100 stat-card" data-stat="debet">
+            <div class="card-body d-flex align-items-center">
+                <div class="flex-grow-1">
+                    <div class="d-flex align-items-center mb-2">
+                        <i class="bi bi-arrow-up-circle fs-4 me-2 opacity-75 stat-icon"></i>
+                        <h6 class="card-title mb-0 opacity-75">Total Debet</h6>
+                    </div>
+                    <div class="stat-number mb-1">
+                        <div class="currency-amount">Rp {{ total_debet|default:"0"|floatformat:0 }}</div>
+                    </div>
+                    <small class="opacity-75">
+                        <i class="bi bi-plus-circle"></i> Pemasukan
+                    </small>
+                </div>
+                <div class="ms-3">
+                    <div class="bg-white bg-opacity-25 rounded-circle p-3 stat-circle">
+                        <i class="bi bi-wallet2 fs-3"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-3 col-md-6 mb-3">
+        <div class="card border-0 bg-gradient-danger text-white h-100 stat-card" data-stat="kredit">
+            <div class="card-body d-flex align-items-center">
+                <div class="flex-grow-1">
+                    <div class="d-flex align-items-center mb-2">
+                        <i class="bi bi-arrow-down-circle fs-4 me-2 opacity-75 stat-icon"></i>
+                        <h6 class="card-title mb-0 opacity-75">Total Kredit</h6>
+                    </div>
+                    <div class="stat-number mb-1">
+                        <div class="currency-amount">Rp {{ total_kredit|default:"0"|floatformat:0 }}</div>
+                    </div>
+                    <small class="opacity-75">
+                        <i class="bi bi-dash-circle"></i> Pengeluaran
+                    </small>
+                </div>
+                <div class="ms-3">
+                    <div class="bg-white bg-opacity-25 rounded-circle p-3 stat-circle">
+                        <i class="bi bi-credit-card fs-3"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-3 col-md-6 mb-3">
+        <div class="card border-0 bg-gradient-warning text-white h-100 stat-card" data-stat="akun">
+            <div class="card-body d-flex align-items-center">
+                <div class="flex-grow-1">
+                    <div class="d-flex align-items-center mb-2">
+                        <i class="bi bi-list-ul fs-4 me-2 opacity-75 stat-icon"></i>
+                        <h6 class="card-title mb-0 opacity-75">Total Akun</h6>
+                    </div>
+                    <div class="stat-number mb-1">
+                        <div class="number-amount">{{ total_akun|default:"0" }}</div>
+                    </div>
+                    <small class="opacity-75">
+                        <i class="bi bi-collection"></i> Chart of Accounts
+                    </small>
+                </div>
+                <div class="ms-3">
+                    <div class="bg-white bg-opacity-25 rounded-circle p-3 stat-circle">
+                        <i class="bi bi-diagram-3 fs-3"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Balance Summary -->
+{% if total_debet > 0 or total_kredit > 0 %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-light">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-calculator me-2 text-primary"></i>
+                    Ringkasan Keuangan
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-md-4 mb-3">
+                        <div class="p-4 bg-light rounded-3 border summary-card">
+                            <div class="summary-icon mb-3">
+                                <i class="bi bi-calculator fs-2 text-primary"></i>
+                            </div>
+                            <h6 class="text-muted mb-2 fw-semibold">Total Omzet</h6>
+                            <div class="summary-amount mb-2 text-primary fw-bold">
+                                Rp {{ total_debet|add:total_kredit|floatformat:0 }}
+                            </div>
+                            <small class="text-muted">
+                                <i class="bi bi-trending-up me-1"></i> Total Transaksi
+                            </small>
+                        </div>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <div class="p-4 bg-light rounded-3 border summary-card">
+                            <div class="summary-icon mb-3">
+                                <i class="bi bi-journal-text fs-2 text-info"></i>
+                            </div>
+                            <h6 class="text-muted mb-2 fw-semibold">Total Transaksi</h6>
+                            <div class="summary-amount mb-2 text-info fw-bold">{{ total_transaksi|default:"0" }}</div>
+                            <small class="text-muted">
+                                <i class="bi bi-list-ul me-1"></i> Jurnal Entries
+                            </small>
+                        </div>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <div class="p-4 bg-light rounded-3 border summary-card">
+                            <div class="summary-icon mb-3">
+                                <i class="bi bi-shield-check fs-2 text-success"></i>
+                            </div>
+                            <h6 class="text-muted mb-2 fw-semibold">Status Sistem</h6>
+                            <div class="summary-amount mb-2 text-success fw-bold">
+                                <i class="bi bi-check-circle me-2"></i>Aktif
+                            </div>
+                            <small class="text-muted">
+                                <i class="bi bi-server me-1"></i> Sistem Normal
+                            </small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Quick Actions -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-gradient-primary text-white">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-lightning-charge me-2"></i>
+                    Aksi Cepat
+                </h5>
+            </div>
+            <div class="card-body p-4">
+                <div class="row g-4">
+                    <div class="col-xl-2 col-lg-3 col-md-4 col-sm-6 mb-3">
+                        <a href="/input/" class="btn btn-outline-primary dashboard-btn w-100 h-100 d-flex flex-column justify-content-center align-items-center text-decoration-none position-relative">
+                            <i class="bi bi-plus-circle fs-2 mb-3"></i>
+                            <span class="text-center fw-semibold">Input<br>Transaksi</span>
+                            <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+                                <i class="bi bi-star-fill"></i>
+                            </span>
+                        </a>
+                    </div>
+                    <div class="col-xl-2 col-lg-3 col-md-4 col-sm-6 mb-3">
+                        <a href="/jurnal/" class="btn btn-outline-info dashboard-btn w-100 h-100 d-flex flex-column justify-content-center align-items-center text-decoration-none">
+                            <i class="bi bi-journal-text fs-2 mb-3"></i>
+                            <span class="text-center fw-semibold">Jurnal<br>Umum</span>
+                        </a>
+                    </div>
+                    <div class="col-xl-2 col-lg-3 col-md-4 col-sm-6 mb-3">
+                        <a href="/buku-besar/" class="btn btn-outline-success dashboard-btn w-100 h-100 d-flex flex-column justify-content-center align-items-center text-decoration-none">
+                            <i class="bi bi-book fs-2 mb-3"></i>
+                            <span class="text-center fw-semibold">Buku<br>Besar</span>
+                        </a>
+                    </div>
+                    <div class="col-xl-2 col-lg-3 col-md-4 col-sm-6 mb-3">
+                        <a href="/neraca-saldo/" class="btn btn-outline-warning dashboard-btn w-100 h-100 d-flex flex-column justify-content-center align-items-center text-decoration-none">
+                            <i class="bi bi-clipboard-data fs-2 mb-3"></i>
+                            <span class="text-center fw-semibold">Neraca<br>Saldo</span>
+                        </a>
+                    </div>
+                    <div class="col-xl-2 col-lg-3 col-md-4 col-sm-6 mb-3">
+                        <a href="/laporan-keuangan/" class="btn btn-outline-danger dashboard-btn w-100 h-100 d-flex flex-column justify-content-center align-items-center text-decoration-none">
+                            <i class="bi bi-graph-up fs-2 mb-3"></i>
+                            <span class="text-center fw-semibold">Laporan<br>Keuangan</span>
+                        </a>
+                    </div>
+                    <div class="col-xl-2 col-lg-3 col-md-4 col-sm-6 mb-3">
+                        <a href="/akun/" class="btn btn-outline-secondary dashboard-btn w-100 h-100 d-flex flex-column justify-content-center align-items-center text-decoration-none">
+                            <i class="bi bi-list-ul fs-2 mb-3"></i>
+                            <span class="text-center fw-semibold">Daftar<br>Akun</span>
+                        </a>
+                    </div>
+                    <div class="col-xl-2 col-lg-3 col-md-4 col-sm-6 mb-3">
+                        <a href="/akun/" class="btn btn-outline-secondary dashboard-btn w-100 h-100 d-flex flex-column justify-content-center align-items-center text-decoration-none">
+                            <i class="bi bi-list-ul fs-2 mb-2"></i>
+                            <span class="text-center fw-semibold">Kelola<br>Akun</span>
+                        </a>
+                    </div>
+                </div>
+                
+                <!-- Additional Quick Stats -->
+                <hr class="my-4">
+                <div class="row text-center">
+                    <div class="col-md-3 mb-3">
+                        <div class="p-2">
+                            <small class="text-muted d-block">Transaksi Hari Ini</small>
+                            <strong class="text-primary">{{ transaksi_hari_ini|default:0 }}</strong>
+                        </div>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <div class="p-2">
+                            <small class="text-muted d-block">Akun Aktif</small>
+                            <strong class="text-success">{{ total_akun }}</strong>
+                        </div>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <div class="p-2">
+                            <small class="text-muted d-block">Last Login</small>
+                            <strong class="text-info">{{ user.last_login|date:"H:i"|default:"--:--" }}</strong>
+                        </div>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <div class="p-2 d-flex align-items-center gap-3">
+                            {% if user_profile.profile_picture %}
+                                <img src="{{ user_profile.profile_picture.url }}" 
+                                     alt="Profile" 
+                                     class="rounded-circle border"
+                                     style="width: 40px; height: 40px; object-fit: cover;">
+                            {% else %}
+                                <div class="rounded-circle bg-light border d-flex align-items-center justify-content-center"
+                                     style="width: 40px; height: 40px;">
+                                    <i class="bi bi-person text-muted"></i>
+                                </div>
+                            {% endif %}
+                            <div>
+                                <small class="text-muted d-block">User</small>
+                                <strong class="text-dark">{{ user.get_full_name|default:user.username }}</strong>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Activity -->
+<div class="row">
+    <div class="col-lg-8 mb-4">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-clock-history me-2"></i>
+                    Transaksi Terbaru
+                </h5>
+                <a href="/jurnal/" class="btn btn-sm btn-outline-primary">Lihat Semua</a>
+            </div>
+            <div class="card-body">
+                {% if recent_transactions %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Tanggal</th>
+                                <th>Deskripsi</th>
+                                <th>Debet</th>
+                                <th>Kredit</th>
+                                <th>Jumlah</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for transaksi in recent_transactions %}
+                            <tr>
+                                <td>{{ transaksi.tanggal|date:"d/m/Y" }}</td>
+                                <td>{{ transaksi.deskripsi|truncatechars:50 }}</td>
+                                <td><span class="badge bg-success">{{ transaksi.akun_debet.nama }}</span></td>
+                                <td><span class="badge bg-danger">{{ transaksi.akun_kredit.nama }}</span></td>
+                                <td class="fw-semibold">Rp {{ transaksi.jumlah|floatformat:0 }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-4">
+                    <i class="bi bi-inbox fs-1 text-muted mb-3"></i>
+                    <p class="text-muted">Belum ada transaksi. <a href="/input/">Tambah transaksi pertama</a></p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-4 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-info-circle me-2"></i>
+                    Panduan Cepat
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="list-group list-group-flush">
+                    <div class="list-group-item border-0 px-0">
+                        <h6 class="mb-1">1. Input Transaksi</h6>
+                        <small class="text-muted">Masukkan semua transaksi keuangan harian</small>
+                    </div>
+                    <div class="list-group-item border-0 px-0">
+                        <h6 class="mb-1">2. Periksa Jurnal</h6>
+                        <small class="text-muted">Pastikan semua transaksi tercatat dengan benar</small>
+                    </div>
+                    <div class="list-group-item border-0 px-0">
+                        <h6 class="mb-1">3. Buat Laporan</h6>
+                        <small class="text-muted">Generate laporan keuangan secara otomatis</small>
+                    </div>
+                    <div class="list-group-item border-0 px-0">
+                        <h6 class="mb-1">4. Analisis Data</h6>
+                        <small class="text-muted">Gunakan data untuk pengambilan keputusan</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card mt-3">
+            <div class="card-header bg-light">
+                <h6 class="card-title mb-0">
+                    <i class="bi bi-calendar-check me-2 text-primary"></i>
+                    Tugas Hari Ini
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="form-check mb-2">
+                    <input class="form-check-input" type="checkbox" id="task1">
+                    <label class="form-check-label small" for="task1">
+                        Input transaksi hari ini
+                    </label>
+                </div>
+                <div class="form-check mb-2">
+                    <input class="form-check-input" type="checkbox" id="task2">
+                    <label class="form-check-label small" for="task2">
+                        Periksa neraca saldo
+                    </label>
+                </div>
+                <div class="form-check mb-2">
+                    <input class="form-check-input" type="checkbox" id="task3">
+                    <label class="form-check-label small" for="task3">
+                        Review laporan bulanan
+                    </label>
+                </div>
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="task4">
+                    <label class="form-check-label small" for="task4">
+                        Backup data sistem
+                    </label>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Custom Styles -->
+<style>
+    /* Import Google Fonts Poppins */
+    @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap');
+    
+    /* Apply Poppins font to main elements */
+    .page-title, .card-title, .card-body h6, .card-body .fw-semibold, 
+    .stat-title, .dashboard-btn, .summary-card h6, .btn, h1, h2, h3, h4, h5, h6,
+    .badge, .text-muted, .fw-bold, .fw-semibold {
+        font-family: 'Poppins', 'Segoe UI', system-ui, -apple-system, sans-serif !important;
+    }
+    
+    /* Modern Poppins styling improvements */
+    .card-body h6 {
+        font-weight: 600;
+        letter-spacing: 0.3px;
+    }
+    
+    .btn {
+        font-weight: 500;
+        letter-spacing: 0.2px;
+    }
+    
+    .bg-gradient-primary {
+        background: linear-gradient(135deg, #3b82f6, #1d4ed8) !important;
+    }
+    
+    .bg-gradient-success {
+        background: linear-gradient(135deg, #22c55e, #16a34a) !important;
+    }
+    
+    .bg-gradient-danger {
+        background: linear-gradient(135deg, #ef4444, #dc2626) !important;
+    }
+    
+    .bg-gradient-warning {
+        background: linear-gradient(135deg, #f59e0b, #d97706) !important;
+    }
+    
+    .dashboard-btn {
+        min-height: 120px;
+        transition: all 0.3s ease;
+        border-radius: 15px !important;
+    }
+    
+    .dashboard-btn:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+    }
+    
+    /* Summary Cards Styling */
+    .summary-card {
+        transition: all 0.3s ease;
+        border: 2px solid #e5e7eb !important;
+        background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%) !important;
+    }
+    
+    .summary-card:hover {
+        transform: translateY(-5px);
+        border-color: #3b82f6 !important;
+        box-shadow: 0 10px 25px rgba(59, 130, 246, 0.15) !important;
+    }
+    
+    .summary-icon {
+        width: 60px;
+        height: 60px;
+        background: rgba(59, 130, 246, 0.1);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto;
+        transition: all 0.3s ease;
+    }
+    
+    .summary-card:hover .summary-icon {
+        background: rgba(59, 130, 246, 0.2);
+        transform: scale(1.1);
+    }
+    
+    /* Currency and Number Formatting */
+    .currency-amount, .number-amount {
+        font-size: clamp(1.1rem, 2.8vw, 1.6rem);
+        font-weight: 800;
+        line-height: 1.1;
+        font-family: 'Poppins', 'Segoe UI', system-ui, -apple-system, sans-serif;
+        letter-spacing: -0.1px;
+        word-break: break-word;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 100%;
+        display: block;
+        color: inherit;
+        text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+        font-variant-numeric: tabular-nums;
+    }
+    
+    .currency-amount {
+        color: inherit;
+        font-variant-numeric: tabular-nums;
+    }
+    
+    .number-amount {
+        color: inherit;
+        font-variant-numeric: tabular-nums;
+    }
+    
+    .summary-amount {
+        font-size: clamp(1.2rem, 3.2vw, 1.8rem);
+        font-weight: 800;
+        line-height: 1.1;
+        font-family: 'Poppins', 'Segoe UI', system-ui, -apple-system, sans-serif;
+        letter-spacing: -0.1px;
+        font-variant-numeric: tabular-nums;
+        word-break: break-word;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 100%;
+        display: block;
+        text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+    }
+    
+    /* Responsive font sizes for different screen sizes */
+    @media (max-width: 1200px) {
+        .currency-amount, .number-amount {
+            font-size: clamp(1rem, 2.5vw, 1.4rem);
+        }
+        
+        .summary-amount {
+            font-size: clamp(1.1rem, 2.8vw, 1.6rem);
+        }
+    }
+    
+    @media (max-width: 768px) {
+        .currency-amount, .number-amount {
+            font-size: clamp(0.95rem, 2.2vw, 1.3rem);
+            white-space: normal;
+            word-break: break-word;
+            line-height: 1.2;
+        }
+        
+        .summary-amount {
+            font-size: clamp(1.05rem, 2.5vw, 1.4rem);
+            white-space: normal;
+            word-break: break-word;
+            line-height: 1.2;
+        }
+    }
+    
+    @media (max-width: 576px) {
+        .currency-amount, .number-amount {
+            font-size: clamp(0.9rem, 2vw, 1.2rem);
+            white-space: normal;
+            word-break: break-word;
+            line-height: 1.3;
+        }
+        
+        .summary-amount {
+            font-size: clamp(1rem, 2.2vw, 1.3rem);
+            white-space: normal;
+            word-break: break-word;
+            line-height: 1.3;
+        }
+    }
+    
+    /* Improved stat-number container */
+    .stat-number {
+        display: flex;
+        align-items: center;
+        min-height: 2.2rem;
+        max-height: 3.5rem;
+        overflow: hidden;
+        flex: 1;
+        margin-bottom: 0.2rem !important;
+    }
+    
+    /* Statistics Cards Layout Fix */
+    .stat-card .card-body {
+        padding: 0.8rem 1rem;
+        display: flex;
+        align-items: stretch;
+        height: 100%;
+        min-height: 120px;
+    }
+    
+    .stat-card .flex-grow-1 {
+        overflow: hidden;
+        min-width: 0;
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        padding-right: 0.5rem;
+    }
+    
+    .stat-card .ms-3 {
+        flex-shrink: 0;
+        display: flex;
+        align-items: center;
+    }
+    
+    /* Better title and content spacing */
+    .stat-card .d-flex.align-items-center.mb-2 {
+        margin-bottom: 0.3rem !important;
+        flex-wrap: nowrap;
+        overflow: hidden;
+    }
+    
+    .stat-card .card-title {
+        font-size: clamp(0.65rem, 1.2vw, 0.75rem);
+        line-height: 1.1;
+        margin: 0;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        flex: 1;
+        min-width: 0;
+    }
+    
+    .stat-card .stat-icon {
+        font-size: clamp(0.9rem, 1.8vw, 1.1rem);
+        margin-right: 0.3rem !important;
+        flex-shrink: 0;
+    }
+    
+    /* Number display improvements */
+    .stat-number {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        margin-bottom: 0.3rem !important;
+        overflow: hidden;
+    }
+    
+    .currency-amount, .number-amount {
+        width: 100%;
+        text-align: left;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        line-height: 1.1;
+    }
+    
+    /* Small text at bottom */
+    .stat-card small {
+        font-size: clamp(0.6rem, 1.1vw, 0.7rem);
+        line-height: 1.2;
+        margin: 0;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    
+    /* Responsive adjustments for mobile */
+    @media (max-width: 768px) {
+        .stat-card .card-body {
+            padding: 0.7rem 0.8rem;
+            min-height: 110px;
+            flex-direction: column;
+            text-align: center;
+        }
+        
+        .stat-card .flex-grow-1 {
+            padding-right: 0;
+            margin-bottom: 0.5rem;
+        }
+        
+        .stat-card .ms-3 {
+            margin: 0 auto !important;
+        }
+        
+        .currency-amount, .number-amount {
+            text-align: center;
+            white-space: normal;
+            word-break: break-word;
+            line-height: 1.2;
+        }
+        
+        .stat-card .d-flex.align-items-center.mb-2 {
+            justify-content: center;
+            text-align: center;
+        }
+        
+        .stat-card small {
+            text-align: center;
+            white-space: normal;
+        }
+    }
+    
+    @media (max-width: 576px) {
+        .stat-card .card-body {
+            padding: 0.6rem;
+            min-height: 100px;
+        }
+        
+        .stat-circle {
+            width: 35px !important;
+            height: 35px !important;
+            padding: 0.4rem !important;
+        }
+        
+        .stat-circle i {
+            font-size: 1rem !important;
+        }
+    }
+    .dashboard-btn {
+        min-height: 130px;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        border-radius: 15px !important;
+        border-width: 2px !important;
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .dashboard-btn::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
+        transition: left 0.5s;
+    }
+    
+    .dashboard-btn:hover::before {
+        left: 100%;
+    }
+    
+    .dashboard-btn:hover {
+        transform: translateY(-8px) scale(1.02);
+        box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
+    }
+    
+    /* Welcome Notification Styling - Simplified */
+    .welcome-notification {
+        animation: slideInDown 0.6s ease-out;
+    }
+    
+    .welcome-notification .card {
+        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+        border-radius: 12px;
+        border-left: 4px solid #3b82f6;
+        transition: all 0.3s ease;
+    }
+    
+    .welcome-notification .card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1) !important;
+    }
+    
+    .notification-icon {
+        width: 50px;
+        height: 50px;
+        background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto;
+        box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3);
+    }
+    
+    .notification-icon i {
+        font-size: 1.5rem;
+        color: white;
+    }
+    
+    .notification-title {
+        color: #1e293b;
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+    }
+    
+    .notification-text {
+        color: #64748b;
+        margin-bottom: 0;
+        line-height: 1.5;
+    }
+    
+    .notification-text a {
+        color: #3b82f6;
+        transition: color 0.2s ease;
+    }
+    
+    .notification-text a:hover {
+        color: #1d4ed8;
+    }
+    
+    .btn-close-simple {
+        background: #f1f5f9;
+        border: none;
+        border-radius: 50%;
+        width: 35px;
+        height: 35px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #64748b;
+        transition: all 0.2s ease;
+    }
+    
+    .btn-close-simple:hover {
+        background: #e2e8f0;
+        color: #1e293b;
+        transform: scale(1.05);
+    }
+    
+    [data-theme="dark"] .currency-amount, 
+    [data-theme="dark"] .number-amount {
+        color: inherit !important;
+        text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    }
+    
+    [data-theme="dark"] .summary-amount {
+        text-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+    }
+    
+    /* Dark mode styling for summary cards */
+    [data-theme="dark"] .summary-card {
+        background: linear-gradient(135deg, var(--card-bg) 0%, var(--bg-color) 100%) !important;
+        border-color: var(--border-color) !important;
+    }
+    
+    [data-theme="dark"] .summary-card:hover {
+        border-color: var(--primary-color) !important;
+        box-shadow: 0 10px 25px rgba(96, 165, 250, 0.15) !important;
+    }
+    
+    [data-theme="dark"] .summary-icon {
+        background: rgba(96, 165, 250, 0.2) !important;
+    }
+    
+    [data-theme="dark"] .summary-card:hover .summary-icon {
+        background: rgba(96, 165, 250, 0.3) !important;
+    }
+    
+    /* Dark mode adjustments for notification */
+    [data-theme="dark"] .welcome-notification .card {
+        background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%) !important;
+        border-left-color: #60a5fa !important;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3) !important;
+    }
+    
+    [data-theme="dark"] .notification-title {
+        color: #f1f5f9 !important;
+        font-weight: 600;
+    }
+    
+    [data-theme="dark"] .notification-text {
+        color: #e2e8f0 !important;
+        line-height: 1.6;
+    }
+    
+    [data-theme="dark"] .notification-text a {
+        color: #60a5fa !important;
+        font-weight: 500;
+    }
+    
+    [data-theme="dark"] .notification-text a:hover {
+        color: #93c5fd !important;
+        text-decoration: underline;
+    }
+    
+    [data-theme="dark"] .notification-icon {
+        color: #34d399 !important;
+    }
+    
+    [data-theme="dark"] .btn-close-simple {
+        color: #94a3b8 !important;
+    }
+    
+    /* Dark mode styling for statistics cards */
+    [data-theme="dark"] .bg-gradient-primary {
+        background: linear-gradient(135deg, #3b82f6, #1e40af) !important;
+        color: #ffffff !important;
+    }
+    
+    [data-theme="dark"] .bg-gradient-success {
+        background: linear-gradient(135deg, #10b981, #047857) !important;
+        color: #ffffff !important;
+    }
+    
+    [data-theme="dark"] .bg-gradient-warning {
+        background: linear-gradient(135deg, #f59e0b, #d97706) !important;
+        color: #ffffff !important;
+    }
+    
+    [data-theme="dark"] .bg-gradient-danger {
+        background: linear-gradient(135deg, #ef4444, #dc2626) !important;
+        color: #ffffff !important;
+    }
+    
+    [data-theme="dark"] .stat-card {
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3) !important;
+        border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    }
+    
+    [data-theme="dark"] .stat-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 12px 32px rgba(0, 0, 0, 0.4) !important;
+    }
+    
+    [data-theme="dark"] .stat-card .card-title {
+        color: rgba(255, 255, 255, 0.9) !important;
+        font-weight: 500;
+    }
+    
+    [data-theme="dark"] .stat-card .stat-number {
+        color: #ffffff !important;
+        font-weight: 700;
+        text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    }
+    
+    [data-theme="dark"] .stat-card small {
+        color: rgba(255, 255, 255, 0.8) !important;
+    }
+    
+    [data-theme="dark"] .stat-card .stat-icon {
+        color: rgba(255, 255, 255, 0.9) !important;
+    }
+    
+    /* Dark mode styling for quick actions and dashboard buttons */
+    [data-theme="dark"] .dashboard-btn {
+        background-color: var(--card-bg) !important;
+        border-color: var(--border-color) !important;
+        color: var(--text-color) !important;
+        transition: all 0.3s ease;
+    }
+    
+    [data-theme="dark"] .dashboard-btn:hover {
+        background-color: var(--bg-color) !important;
+        color: var(--primary-color) !important;
+        border-color: var(--primary-color) !important;
+        transform: translateY(-2px);
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+    }
+    
+    [data-theme="dark"] .btn-outline-primary {
+        color: var(--primary-color) !important;
+        border-color: var(--primary-color) !important;
+    }
+    
+    [data-theme="dark"] .btn-outline-primary:hover {
+        background-color: var(--primary-color) !important;
+        color: #ffffff !important;
+    }
+    
+    [data-theme="dark"] .btn-outline-info {
+        color: #06b6d4 !important;
+        border-color: #06b6d4 !important;
+    }
+    
+    [data-theme="dark"] .btn-outline-info:hover {
+        background-color: #06b6d4 !important;
+        color: #ffffff !important;
+    }
+    
+    [data-theme="dark"] .btn-outline-success {
+        color: #10b981 !important;
+        border-color: #10b981 !important;
+    }
+    
+    [data-theme="dark"] .btn-outline-success:hover {
+        background-color: #10b981 !important;
+        color: #ffffff !important;
+    }
+    
+    [data-theme="dark"] .btn-outline-warning {
+        color: #f59e0b !important;
+        border-color: #f59e0b !important;
+    }
+    
+    [data-theme="dark"] .btn-outline-warning:hover {
+        background-color: #f59e0b !important;
+        color: #ffffff !important;
+    }
+    
+    [data-theme="dark"] .btn-outline-danger {
+        color: #ef4444 !important;
+        border-color: #ef4444 !important;
+    }
+    
+    [data-theme="dark"] .btn-outline-danger:hover {
+        background-color: #ef4444 !important;
+        color: #ffffff !important;
+    }
+    
+    [data-theme="dark"] .badge {
+        color: #ffffff !important;
+    }
+    
+    /* Dark mode styling for card headers */
+    [data-theme="dark"] .card-header.bg-gradient-primary {
+        background: linear-gradient(135deg, var(--primary-color), #1e40af) !important;
+        color: #ffffff !important;
+        border-bottom-color: var(--border-color) !important;
+    }
+    
+    [data-theme="dark"] .card-header .card-title {
+        color: #ffffff !important;
+        font-weight: 600;
+    }
+    
+    [data-theme="dark"] .card-header.bg-light {
+        background: linear-gradient(135deg, var(--card-bg), var(--bg-color)) !important;
+        color: var(--text-color) !important;
+        border-bottom-color: var(--border-color) !important;
+    }
+    
+    [data-theme="dark"] .card-header.bg-light .card-title {
+        color: var(--text-color) !important;
+    }
+    
+    [data-theme="dark"] .card-header.bg-light .text-primary {
+        color: var(--primary-color) !important;
+    }
+    
+    /* Dark mode styling for task list and checkboxes */
+    [data-theme="dark"] .form-check-input {
+        background-color: var(--bg-color) !important;
+        border-color: var(--border-color) !important;
+        box-shadow: none !important;
+    }
+    
+    [data-theme="dark"] .form-check-input:checked {
+        background-color: var(--primary-color) !important;
+        border-color: var(--primary-color) !important;
+    }
+    
+    [data-theme="dark"] .form-check-input:focus {
+        border-color: var(--primary-color) !important;
+        box-shadow: 0 0 0 0.2rem rgba(96, 165, 250, 0.25) !important;
+    }
+    
+    [data-theme="dark"] .form-check-label {
+        color: var(--accent-text) !important;
+        font-weight: 500;
+    }
+    
+    [data-theme="dark"] .form-check-label.small {
+        color: var(--accent-text) !important;
+        line-height: 1.5;
+    }
+    
+    [data-theme="dark"] .task-completed {
+        opacity: 0.5 !important;
+        color: var(--muted-text) !important;
+    }
+    
+    /* Dark mode styling for list groups */
+    [data-theme="dark"] .list-group-item {
+        background-color: transparent !important;
+        border-color: var(--border-color) !important;
+        color: var(--text-color) !important;
+    }
+    
+    [data-theme="dark"] .list-group-item h6 {
+        color: var(--text-color) !important;
+        font-weight: 600;
+    }
+    
+    [data-theme="dark"] .list-group-item .text-muted {
+        color: var(--muted-text) !important;
+    }
+    
+    [data-theme="dark"] .list-group-item:hover {
+        background-color: var(--bg-color) !important;
+    }
+    
+    /* Dark mode styling for bg-light elements */
+    [data-theme="dark"] .bg-light {
+        background-color: var(--card-bg) !important;
+        color: var(--text-color) !important;
+    }
+    
+    [data-theme="dark"] .badge.bg-light {
+        background-color: var(--card-bg) !important;
+        color: var(--text-color) !important;
+        border: 1px solid var(--border-color) !important;
+    }
+    
+    [data-theme="dark"] .badge.bg-light {
+        background-color: var(--card-bg) !important;
+        color: var(--text-color) !important;
+        border: 1px solid var(--border-color) !important;
+    }
+    
+    [data-theme="dark"] .page-title {
+        color: var(--text-color) !important;
+    }
+    
+    [data-theme="dark"] .page-subtitle {
+        color: var(--muted-text) !important;
+    }
+    
+    [data-theme="dark"] .card {
+        background-color: var(--card-bg) !important;
+        box-shadow: 0 2px 15px rgba(0, 0, 0, 0.3) !important;
+    }
+    
+    [data-theme="dark"] .card:hover {
+        box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4) !important;
+    }
+    
+    /* Dark mode styling for rounded bg-light containers */
+    [data-theme="dark"] .p-3.bg-light.rounded {
+        background-color: var(--bg-color) !important;
+        border: 1px solid var(--border-color) !important;
+    }
+    
+    [data-theme="dark"] .notification-icon {
+        background: linear-gradient(135deg, #4f90ff, #1e40af);
+    }
+    
+    [data-theme="dark"] .btn-close-simple {
+        background: #4b5563;
+        color: #d1d5db;
+    }
+    
+    [data-theme="dark"] .btn-close-simple:hover {
+        background: #6b7280;
+        color: #f1f5f9;
+    }
+    
+    /* Simple animations */
+    @keyframes slideInDown {
+        from {
+            opacity: 0;
+            transform: translateY(-20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    
+    /* Statistics Cards Animation */
+    .stat-card {
+        cursor: pointer;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        transform: translateY(0);
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        position: relative;
+        overflow: hidden;
+    }
+
+    .stat-card:hover {
+        transform: translateY(-8px) scale(1.02);
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+        z-index: 10;
+    }
+
+    .stat-card:active {
+        transform: translateY(-4px) scale(1.01);
+        box-shadow: 0 10px 20px rgba(0, 0, 0, 0.15);
+    }
+
+    /* Icon animations */
+    .stat-icon {
+        transition: all 0.3s ease;
+    }
+
+    .stat-card:hover .stat-icon {
+        transform: rotate(12deg) scale(1.1);
+    }
+
+    /* Number animation */
+    .stat-number {
+        transition: all 0.3s ease;
+    }
+
+    .stat-card:hover .stat-number {
+        transform: scale(1.05);
+        text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    }
+
+    /* Circle icon container animation */
+    .stat-circle {
+        transition: all 0.3s ease;
+    }
+
+    .stat-card:hover .stat-circle {
+        transform: rotate(-15deg) scale(1.1);
+        background: rgba(255, 255, 255, 0.35) !important;
+    }
+
+    /* Pulse animation for click effect */
+    @keyframes pulse {
+        0%, 100% { transform: scale(1); }
+        50% { transform: scale(1.05); }
+    }
+
+    .stat-card.pulse {
+        animation: pulse 0.6s ease-in-out;
+    }
+
+    /* Glow effect on hover */
+    .stat-card:hover::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        border-radius: inherit;
+        background: linear-gradient(45deg, rgba(255,255,255,0.1), rgba(255,255,255,0.2));
+        pointer-events: none;
+    }
+
+    /* Sparkle effect */
+    .stat-card::after {
+        content: '';
+        position: absolute;
+        top: 20px;
+        right: 20px;
+        width: 4px;
+        height: 4px;
+        background: rgba(255, 255, 255, 0.6);
+        border-radius: 50%;
+        opacity: 0;
+        transition: opacity 0.3s ease;
+    }
+
+    .stat-card:hover::after {
+        opacity: 1;
+        animation: sparkle 1.5s infinite;
+    }
+
+    @keyframes sparkle {
+        0%, 100% { opacity: 0.6; transform: scale(1); }
+        50% { opacity: 1; transform: scale(1.5); }
+    }
+
+    /* Mobile touch support */
+    @media (max-width: 768px) {
+        .stat-card:hover {
+            transform: translateY(-4px) scale(1.01);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.15);
+        }
+    }
+
+    /* Enhanced button animations */
+    .btn {
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 15px rgba(0, 0, 0, 0.2);
+    }
+
+    .btn:active {
+        transform: translateY(0);
+    }
+    
+    .card {
+        transition: all 0.3s ease;
+        border: 0 !important;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08) !important;
+        font-family: 'Poppins', 'Segoe UI', system-ui, -apple-system, sans-serif;
+    }
+    
+    .card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15) !important;
+    }
+    
+    .page-title {
+        font-weight: 700;
+        color: #1e293b;
+        font-size: 2.25rem;
+        font-family: 'Poppins', 'Segoe UI', system-ui, -apple-system, sans-serif;
+    }
+    
+    .page-subtitle {
+        font-size: 1.1rem;
+        color: #64748b;
+        font-family: 'Poppins', 'Segoe UI', system-ui, -apple-system, sans-serif;
+    }
+    
+    .badge {
+        font-weight: 500;
+        border-radius: 8px !important;
+    }
+    
+    .badge.bg-light {
+        background-color: #f8fafc !important;
+        color: #374151 !important;
+        border: 1px solid #e5e7eb;
+    }
+    
+    .task-completed {
+        opacity: 0.6;
+        text-decoration: line-through;
+    }
+    
+    @keyframes pulse {
+        0% { transform: scale(1); }
+        50% { transform: scale(1.05); }
+        100% { transform: scale(1); }
+    }
+    
+    .pulse-animation {
+        animation: pulse 2s infinite;
+    }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Format numbers with thousand separators
+    function formatNumber(num) {
+        if (num === null || num === undefined || num === '') return '0';
+        return parseInt(num).toLocaleString('id-ID');
+    }
+    
+    function formatCurrency(num) {
+        if (num === null || num === undefined || num === '') return 'Rp 0';
+        return 'Rp ' + parseInt(num).toLocaleString('id-ID');
+    }
+    
+    // Adjust font size based on text length
+    function adjustFontSize(element, text) {
+        const container = element.closest('.stat-card') || element.closest('.summary-card');
+        if (!container) return;
+        
+        const containerWidth = container.offsetWidth;
+        const baseSize = parseFloat(getComputedStyle(element).fontSize);
+        
+        // Calculate text length and adjust font size accordingly
+        if (text.length > 15) {
+            element.style.fontSize = Math.max(baseSize * 0.7, 12) + 'px';
+        } else if (text.length > 12) {
+            element.style.fontSize = Math.max(baseSize * 0.8, 14) + 'px';
+        } else if (text.length > 9) {
+            element.style.fontSize = Math.max(baseSize * 0.9, 16) + 'px';
+        }
+        
+        // Check if text overflows and reduce font size further if needed
+        const maxAttempts = 5;
+        let attempts = 0;
+        while (element.scrollWidth > element.offsetWidth && attempts < maxAttempts) {
+            const currentSize = parseFloat(element.style.fontSize || getComputedStyle(element).fontSize);
+            element.style.fontSize = Math.max(currentSize * 0.9, 10) + 'px';
+            attempts++;
+        }
+    }
+    
+    // Format all currency amounts
+    document.querySelectorAll('.currency-amount').forEach(function(element) {
+        const text = element.textContent.trim();
+        const number = text.replace(/[Rp\s]/g, '');
+        if (number && !isNaN(number)) {
+            const formattedText = formatCurrency(number);
+            element.textContent = formattedText;
+            
+            // Adjust font size after formatting
+            setTimeout(() => adjustFontSize(element, formattedText), 100);
+        }
+    });
+    
+    // Format all number amounts
+    document.querySelectorAll('.number-amount').forEach(function(element) {
+        const text = element.textContent.trim();
+        if (text && !isNaN(text)) {
+            const formattedText = formatNumber(text);
+            element.textContent = formattedText;
+            
+            // Adjust font size after formatting
+            setTimeout(() => adjustFontSize(element, formattedText), 100);
+        }
+    });
+    
+    // Format summary amounts that contain currency
+    document.querySelectorAll('.summary-amount').forEach(function(element) {
+        const text = element.textContent.trim();
+        let formattedText = text;
+        
+        if (text.includes('Rp')) {
+            const number = text.replace(/[Rp\s]/g, '');
+            if (number && !isNaN(number)) {
+                formattedText = formatCurrency(number);
+                element.textContent = formattedText;
+            }
+        } else if (text && !isNaN(text)) {
+            formattedText = formatNumber(text);
+            element.textContent = formattedText;
+        }
+        
+        // Adjust font size after formatting
+        setTimeout(() => adjustFontSize(element, formattedText), 100);
+    });
+    
+    // Adjust font sizes on window resize
+    let resizeTimeout;
+    window.addEventListener('resize', function() {
+        clearTimeout(resizeTimeout);
+        resizeTimeout = setTimeout(function() {
+            document.querySelectorAll('.currency-amount, .number-amount, .summary-amount').forEach(function(element) {
+                // Reset font size first
+                element.style.fontSize = '';
+                // Then adjust based on content
+                setTimeout(() => adjustFontSize(element, element.textContent), 50);
+            });
+        }, 250);
+    });
+    
+    // Real-time clock
+    function updateClock() {
+        const now = new Date();
+        const timeString = now.toLocaleTimeString('id-ID', {
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit'
+        });
+        const clockElement = document.getElementById('current-time');
+        if (clockElement) {
+            clockElement.textContent = timeString;
+        }
+    }
+    
+    // Update clock every second
+    setInterval(updateClock, 1000);
+    updateClock(); // Initial call
+    
+    // Task management
+    const checkboxes = document.querySelectorAll('.form-check-input');
+    checkboxes.forEach(checkbox => {
+        checkbox.addEventListener('change', function() {
+            const label = this.nextElementSibling;
+            if (this.checked) {
+                label.classList.add('task-completed');
+                // Add a small celebration effect
+                this.closest('.form-check').classList.add('pulse-animation');
+                setTimeout(() => {
+                    this.closest('.form-check').classList.remove('pulse-animation');
+                }, 1000);
+            } else {
+                label.classList.remove('task-completed');
+            }
+        });
+    });
+    
+    // Dashboard statistics animation
+    const cards = document.querySelectorAll('.card');
+    cards.forEach((card, index) => {
+        setTimeout(() => {
+            card.style.opacity = '0';
+            card.style.transform = 'translateY(20px)';
+            card.style.transition = 'all 0.5s ease';
+            
+            setTimeout(() => {
+                card.style.opacity = '1';
+                card.style.transform = 'translateY(0)';
+            }, 100);
+        }, index * 100);
+    });
+    
+    // Add tooltip to dashboard buttons
+    const dashboardBtns = document.querySelectorAll('.dashboard-btn');
+    dashboardBtns.forEach(btn => {
+        btn.addEventListener('mouseenter', function() {
+            this.style.transform = 'translateY(-5px) scale(1.02)';
+        });
+        
+        btn.addEventListener('mouseleave', function() {
+            this.style.transform = 'translateY(0) scale(1)';
+        });
+    });
+    
+    // Add click effect to cards
+    const statCards = document.querySelectorAll('.row .card');
+    statCards.forEach(card => {
+        card.addEventListener('click', function() {
+            this.style.transform = 'scale(0.98)';
+            setTimeout(() => {
+                this.style.transform = 'scale(1)';
+            }, 150);
+        });
+    });
+    
+    // Enhanced Statistics Cards Animation
+    const statisticCards = document.querySelectorAll('.stat-card');
+    statisticCards.forEach((card, index) => {
+        // Add pulse effect on click
+        card.addEventListener('click', function(e) {
+            e.preventDefault();
+            
+            // Remove existing pulse classes
+            this.classList.remove('pulse');
+            
+            // Add pulse class
+            this.classList.add('pulse');
+            
+            // Create ripple effect
+            const ripple = document.createElement('div');
+            const rect = this.getBoundingClientRect();
+            const size = Math.max(rect.width, rect.height);
+            
+            ripple.style.width = ripple.style.height = size + 'px';
+            ripple.style.left = (e.clientX - rect.left - size / 2) + 'px';
+            ripple.style.top = (e.clientY - rect.top - size / 2) + 'px';
+            ripple.style.position = 'absolute';
+            ripple.style.borderRadius = '50%';
+            ripple.style.background = 'rgba(255, 255, 255, 0.3)';
+            ripple.style.transform = 'scale(0)';
+            ripple.style.animation = 'ripple 0.6s linear';
+            ripple.style.pointerEvents = 'none';
+            
+            this.appendChild(ripple);
+            
+            // Remove ripple after animation
+            setTimeout(() => {
+                if (ripple.parentNode) {
+                    ripple.parentNode.removeChild(ripple);
+                }
+            }, 600);
+            
+            // Remove pulse class after animation
+            setTimeout(() => {
+                this.classList.remove('pulse');
+            }, 600);
+            
+            // Show card info (optional)
+            const statType = this.getAttribute('data-stat');
+            if (statType) {
+                console.log(`Clicked on ${statType} card`);
+                // You can add more functionality here like showing details
+            }
+        });
+        
+        // Touch support for mobile
+        card.addEventListener('touchstart', function(e) {
+            this.style.transform = 'translateY(-4px) scale(1.01)';
+        });
+        
+        card.addEventListener('touchend', function(e) {
+            this.style.transform = 'translateY(0) scale(1)';
+        });
+        
+        // Keyboard support
+        card.setAttribute('tabindex', '0');
+        card.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                this.click();
+            }
+        });
+        
+        // Initial animation delay
+        card.style.opacity = '0';
+        card.style.transform = 'translateY(30px)';
+        
+        setTimeout(() => {
+            card.style.opacity = '1';
+            card.style.transform = 'translateY(0)';
+        }, index * 150 + 200);
+    });
+    
+    // Add ripple keyframes
+    const style = document.createElement('style');
+    style.textContent = `
+        @keyframes ripple {
+            to {
+                transform: scale(4);
+                opacity: 0;
+            }
+        }
+    `;
+    document.head.appendChild(style);
+    
+    // Welcome message based on time with more specific greetings
+    const now = new Date();
+    const hour = now.getHours();
+    let greeting = '';
+    let icon = '';
+    
+    if (hour >= 5 && hour < 10) {
+        greeting = 'Selamat Pagi';
+        icon = '🌅';
+    } else if (hour >= 10 && hour < 15) {
+        greeting = 'Selamat Siang';
+        icon = '☀️';
+    } else if (hour >= 15 && hour < 18) {
+        greeting = 'Selamat Sore';
+        icon = '🌤️';
+    } else if (hour >= 18 && hour < 22) {
+        greeting = 'Selamat Malam';
+        icon = '🌙';
+    } else {
+        greeting = 'Selamat Malam';
+        icon = '🌃';
+    }
+    
+    // Update greeting with smooth animation
+    const greetingElement = document.getElementById('time-greeting');
+    if (greetingElement) {
+        greetingElement.style.transition = 'opacity 0.3s ease';
+        greetingElement.style.opacity = '0';
+        
+        setTimeout(() => {
+            greetingElement.textContent = `${greeting} ${icon}`;
+            greetingElement.style.opacity = '1';
+        }, 150);
+    }
+    
+    // Update subtitle if exists (fallback)
+    const subtitle = document.querySelector('.page-subtitle');
+    if (subtitle && !document.getElementById('time-greeting')) {
+        const userName = '{{ user.first_name|default:user.username }}';
+        subtitle.textContent = `${greeting} ${icon}, ${userName}! Selamat datang di sistem akuntansi digital`;
+    }
+    
+    // Auto-refresh data setiap 5 menit (optional)
+    // setInterval(() => {
+    //     console.log('Auto-refreshing dashboard data...');
+    //     // location.reload();
+    // }, 300000); // 5 minutes
+});
+
+// Welcome notification functions
+function dismissNotification() {
+    const notification = document.getElementById('welcome-notification');
+    if (notification) {
+        // Add fade out animation
+        notification.style.transition = 'all 0.5s ease';
+        notification.style.transform = 'translateY(-20px)';
+        notification.style.opacity = '0';
+        
+        // Remove element after animation
+        setTimeout(() => {
+            notification.remove();
+            // Save dismissal state
+            localStorage.setItem('welcomeNotificationDismissed', 'true');
+        }, 500);
+    }
+}
+
+// Check if notification should be shown
+document.addEventListener('DOMContentLoaded', function() {
+    const notification = document.getElementById('welcome-notification');
+    if (notification) {
+        const isDismissed = localStorage.getItem('welcomeNotificationDismissed');
+        if (isDismissed === 'true') {
+            notification.style.display = 'none';
+        }
+    }
+});
+</script>
+{% endblock %}
+
+<!-- Dropdown User/Admin Panel -->
+<div class="dropdown-menu p-3 shadow-lg rounded-4" style="min-width: 260px;">
+    <!-- User Info di atas menu -->
+    <div class="d-flex align-items-center gap-3 pb-3 border-bottom mb-3">
+        {% if user_profile.profile_picture %}
+            <img src="{{ user_profile.profile_picture.url }}" alt="Profile" class="rounded-circle border" style="width: 48px; height: 48px; object-fit: cover;">
+        {% else %}
+            <div class="rounded-circle bg-light border d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
+                <i class="bi bi-person text-muted fs-2"></i>
+            </div>
+        {% endif %}
+        <div>
+            <div class="fw-bold text-dark">{{ user.get_full_name|default:user.username }}</div>
+            <div class="text-muted small">{{ user.email }}</div>
+            <a href="{% url 'profile' %}" class="btn btn-outline-primary btn-sm mt-2 w-100">
+                <i class="bi bi-person-circle me-2"></i>{{ user.get_full_name|default:user.username }}
+            </a>
+        </div>
+    </div>
+    <!-- Menu Admin Panel dan lainnya -->
+    <div class="py-2">
+        <div class="mb-2"><i class="bi bi-gear me-2"></i>Admin Panel</div>
+        <div class="mb-2"><i class="bi bi-moon me-2"></i>Auto: Dark (Malam)</div>
+        <div class="mb-2"><i class="bi bi-info-circle me-2"></i>Klik: Manual | Klik 2x: Auto (06:00-18:00)</div>
+        <div class="mt-3"><a href="/logout/" class="text-danger text-decoration-none"><i class="bi bi-box-arrow-right me-2"></i>Logout</a></div>
+    </div>
+</div>

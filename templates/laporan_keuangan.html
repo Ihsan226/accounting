@@ -1,0 +1,728 @@
+{% extends 'base.html' %}
+
+{% block title %}Laporan Keuangan - Akuntansi{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h1 class="page-title">Laporan Keuangan</h1>
+        <p class="page-subtitle">Analisis keuangan lengkap perusahaan</p>
+    </div>
+    <div class="d-flex gap-2">
+        <a href="{% url 'laporan_keuangan_pdf' %}" class="btn btn-outline-danger btn-action" target="_blank">
+            <i class="bi bi-file-earmark-pdf me-2"></i>Export PDF
+        </a>
+        <button class="btn btn-outline-success btn-action" onclick="exportAllToExcel()">
+            <i class="bi bi-file-earmark-excel me-2"></i>Export Excel
+        </button>
+        <button class="btn btn-outline-info btn-action" onclick="printAllReports()">
+            <i class="bi bi-printer me-2"></i>Print
+        </button>
+    </div>
+</div>
+
+<!-- Filter Section -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-3">
+            <div class="col-md-4">
+                <label class="form-label fw-semibold">Dari Tanggal</label>
+                <input type="date" class="form-control" name="start_date" value="{{ request.GET.start_date }}">
+            </div>
+            <div class="col-md-4">
+                <label class="form-label fw-semibold">Sampai Tanggal</label>
+                <input type="date" class="form-control" name="end_date" value="{{ request.GET.end_date }}">
+            </div>
+            <div class="col-md-2">
+                <label class="form-label fw-semibold">Jenis Laporan</label>
+                <select class="form-select" name="report_type">
+                    <option value="all" {% if request.GET.report_type == 'all' %}selected{% endif %}>Semua</option>
+                    <option value="neraca" {% if request.GET.report_type == 'neraca' %}selected{% endif %}>Neraca</option>
+                    <option value="laba_rugi" {% if request.GET.report_type == 'laba_rugi' %}selected{% endif %}>Laba Rugi</option>
+                    <option value="arus_kas" {% if request.GET.report_type == 'arus_kas' %}selected{% endif %}>Arus Kas</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">&nbsp;</label>
+                <div class="d-grid">
+                    <button type="submit" class="btn btn-outline-primary">
+                        <i class="bi bi-search me-2"></i>Generate
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Navigation Tabs -->
+<ul class="nav nav-tabs mb-4" id="reportTabs" role="tablist">
+    <li class="nav-item" role="presentation">
+        <button class="nav-link active" id="neraca-tab" data-bs-toggle="tab" data-bs-target="#neraca" type="button" role="tab">
+            <i class="bi bi-clipboard-data me-2"></i>Neraca
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" id="laba-rugi-tab" data-bs-toggle="tab" data-bs-target="#laba-rugi" type="button" role="tab">
+            <i class="bi bi-graph-up me-2"></i>Laba Rugi
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" id="arus-kas-tab" data-bs-toggle="tab" data-bs-target="#arus-kas" type="button" role="tab">
+            <i class="bi bi-cash-stack me-2"></i>Arus Kas
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" id="analisis-tab" data-bs-toggle="tab" data-bs-target="#analisis" type="button" role="tab">
+            <i class="bi bi-bar-chart me-2"></i>Analisis
+        </button>
+    </li>
+</ul>
+
+<!-- Tab Content -->
+<div class="tab-content" id="reportTabContent">
+    <!-- Neraca Tab -->
+    <div class="tab-pane fade show active" id="neraca" role="tabpanel">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-clipboard-data me-2"></i>
+                    Neraca per {{ request.GET.end_date|default:"Tanggal Terkini"|date:"d F Y" }}
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <!-- Aktiva -->
+                    <div class="col-md-6">
+                        <h6 class="text-success fw-bold mb-3">
+                            <i class="bi bi-arrow-up-circle me-2"></i>AKTIVA
+                        </h6>
+                        <div class="table-responsive">
+                            <table class="table table-sm">
+                                <tbody>
+                                    {% for item in aktiva %}
+                                    <tr>
+                                        <td>{{ item.akun.nama }}</td>
+                                        <td class="text-end fw-semibold">Rp {{ item.saldo|floatformat:0 }}</td>
+                                    </tr>
+                                    {% empty %}
+                                    <tr>
+                                        <td colspan="2" class="text-center text-muted">Belum ada data aktiva</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                                <tfoot class="table-secondary">
+                                    <tr>
+                                        <th>TOTAL AKTIVA</th>
+                                        <th class="text-end">Rp {{ total_aktiva|default:0|floatformat:0 }}</th>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                    </div>
+                    
+                    <!-- Kewajiban & Modal -->
+                    <div class="col-md-6">
+                        <h6 class="text-danger fw-bold mb-3">
+                            <i class="bi bi-arrow-down-circle me-2"></i>KEWAJIBAN & MODAL
+                        </h6>
+                        <div class="table-responsive">
+                            <table class="table table-sm">
+                                <tbody>
+                                    <tr class="table-light">
+                                        <td colspan="2" class="fw-bold text-danger">KEWAJIBAN</td>
+                                    </tr>
+                                    {% for item in kewajiban %}
+                                    <tr>
+                                        <td class="ps-3">{{ item.akun.nama }}</td>
+                                        <td class="text-end fw-semibold">Rp {{ item.saldo|floatformat:0 }}</td>
+                                    </tr>
+                                    {% empty %}
+                                    <tr>
+                                        <td colspan="2" class="text-center text-muted ps-3">Belum ada data kewajiban</td>
+                                    </tr>
+                                    {% endfor %}
+                                    <tr class="table-secondary">
+                                        <td class="ps-3 fw-bold">Total Kewajiban</td>
+                                        <td class="text-end fw-bold">Rp {{ total_kewajiban|default:0|floatformat:0 }}</td>
+                                    </tr>
+                                    <tr class="table-light">
+                                        <td colspan="2" class="fw-bold text-primary">MODAL</td>
+                                    </tr>
+                                    {% for item in modal %}
+                                    <tr>
+                                        <td class="ps-3">{{ item.akun.nama }}</td>
+                                        <td class="text-end fw-semibold">Rp {{ item.saldo|floatformat:0 }}</td>
+                                    </tr>
+                                    {% empty %}
+                                    <tr>
+                                        <td colspan="2" class="text-center text-muted ps-3">Belum ada data modal</td>
+                                    </tr>
+                                    {% endfor %}
+                                    <tr class="table-secondary">
+                                        <td class="ps-3 fw-bold">Modal Awal</td>
+                                        <td class="text-end fw-bold">Rp {{ total_modal|default:0|floatformat:0 }}</td>
+                                    </tr>
+                                    <tr class="table-secondary">
+                                        <td class="ps-3 fw-bold">Laba Tahun Berjalan</td>
+                                        <td class="text-end fw-bold">Rp {{ net_income|default:0|floatformat:0 }}</td>
+                                    </tr>
+                                </tbody>
+                                <tfoot class="table-dark">
+                                    <tr>
+                                        <th>TOTAL KEWAJIBAN & MODAL</th>
+                                        <th class="text-end">Rp {{ total_kewajiban|add:total_modal_display|floatformat:0 }}</th>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Laba Rugi Tab -->
+    <div class="tab-pane fade" id="laba-rugi" role="tabpanel">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-graph-up me-2"></i>
+                    Laporan Laba Rugi periode {{ request.GET.start_date|default:"Awal" }} - {{ request.GET.end_date|default:"Akhir" }}
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table">
+                        <tbody>
+                            <tr class="table-success">
+                                <td colspan="2" class="fw-bold text-success">
+                                    <i class="bi bi-arrow-up-circle me-2"></i>PENDAPATAN
+                                </td>
+                            </tr>
+                            {% for item in pendapatan %}
+                            <tr>
+                                <td class="ps-4">{{ item.akun.nama }}</td>
+                                <td class="text-end fw-semibold">Rp {{ item.saldo|floatformat:0 }}</td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="2" class="text-center text-muted ps-4">Belum ada data pendapatan</td>
+                            </tr>
+                            {% endfor %}
+                            <tr class="table-secondary">
+                                <td class="ps-4 fw-bold">Total Pendapatan</td>
+                                <td class="text-end fw-bold">Rp {{ total_pendapatan|default:0|floatformat:0 }}</td>
+                            </tr>
+                            
+                            <tr class="table-warning">
+                                <td colspan="2" class="fw-bold text-warning">
+                                    <i class="bi bi-arrow-down-circle me-2"></i>BEBAN
+                                </td>
+                            </tr>
+                            {% for item in beban %}
+                            <tr>
+                                <td class="ps-4">{{ item.akun.nama }}</td>
+                                <td class="text-end fw-semibold">Rp {{ item.saldo|floatformat:0 }}</td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="2" class="text-center text-muted ps-4">Belum ada data beban</td>
+                            </tr>
+                            {% endfor %}
+                            <tr class="table-secondary">
+                                <td class="ps-4 fw-bold">Total Beban</td>
+                                <td class="text-end fw-bold">Rp {{ total_beban|default:0|floatformat:0 }}</td>
+                            </tr>
+                        </tbody>
+                        <tfoot class="table-dark">
+                            <tr>
+                                <th>LABA (RUGI) BERSIH</th>
+                                <th class="text-end">
+                                    {% if net_income >= 0 %}
+                                        <span class="text-success">Rp {{ net_income|floatformat:0 }}</span>
+                                    {% else %}
+                                        <span class="text-danger">(Rp {{ net_income|floatformat:0|slice:'1:' }})</span>
+                                    {% endif %}
+                                </th>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Arus Kas Tab -->
+    <div class="tab-pane fade" id="arus-kas" role="tabpanel">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-cash-stack me-2"></i>
+                    Laporan Arus Kas periode {{ request.GET.start_date|default:"Awal" }} - {{ request.GET.end_date|default:"Akhir" }}
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-info">
+                    <i class="bi bi-info-circle me-2"></i>
+                    <strong>Catatan:</strong> Laporan arus kas menampilkan pergerakan kas berdasarkan transaksi yang melibatkan akun kas.
+                </div>
+                
+                <div class="table-responsive">
+                    <table class="table">
+                        <tbody>
+                            <tr class="table-primary">
+                                <td colspan="2" class="fw-bold">
+                                    <i class="bi bi-building me-2"></i>ARUS KAS DARI AKTIVITAS OPERASIONAL
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="ps-4">Penerimaan dari Pelanggan</td>
+                                <td class="text-end">Rp {{ kas_masuk_operasional|default:0|floatformat:0 }}</td>
+                            </tr>
+                            <tr>
+                                <td class="ps-4">Pembayaran untuk Beban</td>
+                                <td class="text-end">(Rp {{ kas_keluar_operasional|default:0|floatformat:0 }})</td>
+                            </tr>
+                            <tr class="table-secondary">
+                                <td class="ps-4 fw-bold">Kas Bersih dari Aktivitas Operasional</td>
+                                <td class="text-end fw-bold">Rp {{ kas_bersih_operasional|floatformat:0 }}</td>
+                            </tr>
+                            
+                            <tr class="table-success">
+                                <td colspan="2" class="fw-bold">
+                                    <i class="bi bi-gear me-2"></i>ARUS KAS DARI AKTIVITAS INVESTASI
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="ps-4">Pembelian Aset</td>
+                                <td class="text-end">(Rp {{ kas_keluar_investasi|default:0|floatformat:0 }})</td>
+                            </tr>
+                            <tr>
+                                <td class="ps-4">Penjualan Aset</td>
+                                <td class="text-end">Rp {{ kas_masuk_investasi|default:0|floatformat:0 }}</td>
+                            </tr>
+                            <tr class="table-secondary">
+                                <td class="ps-4 fw-bold">Kas Bersih dari Aktivitas Investasi</td>
+                                <td class="text-end fw-bold">Rp {{ kas_bersih_investasi|floatformat:0 }}</td>
+                            </tr>
+                            
+                            <tr class="table-warning">
+                                <td colspan="2" class="fw-bold">
+                                    <i class="bi bi-bank me-2"></i>ARUS KAS DARI AKTIVITAS PENDANAAN
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="ps-4">Setoran Modal</td>
+                                <td class="text-end">Rp {{ kas_masuk_pendanaan|default:0|floatformat:0 }}</td>
+                            </tr>
+                            <tr>
+                                <td class="ps-4">Penarikan Modal</td>
+                                <td class="text-end">(Rp {{ kas_keluar_pendanaan|default:0|floatformat:0 }})</td>
+                            </tr>
+                            <tr class="table-secondary">
+                                <td class="ps-4 fw-bold">Kas Bersih dari Aktivitas Pendanaan</td>
+                                <td class="text-end fw-bold">Rp {{ kas_bersih_pendanaan|floatformat:0 }}</td>
+                            </tr>
+                        </tbody>
+                        <tfoot class="table-dark">
+                            <tr>
+                                <th>KENAIKAN (PENURUNAN) KAS BERSIH</th>
+                                <th class="text-end">
+                                    {% if total_kas_bersih >= 0 %}
+                                        <span class="text-success">Rp {{ total_kas_bersih|floatformat:0 }}</span>
+                                    {% else %}
+                                        <span class="text-danger">(Rp {{ total_kas_bersih|floatformat:0|slice:'1:' }})</span>
+                                    {% endif %}
+                                </th>
+                            </tr>
+                            <tr>
+                                <th>KAS AWAL PERIODE</th>
+                                <th class="text-end">Rp {{ kas_awal|default:0|floatformat:0 }}</th>
+                            </tr>
+                            <tr>
+                                <th>KAS AKHIR PERIODE</th>
+                                <th class="text-end">Rp {{ kas_akhir|default:0|floatformat:0 }}</th>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Analisis Tab -->
+    <div class="tab-pane fade" id="analisis" role="tabpanel">
+        <div class="row">
+            <div class="col-md-6 mb-4">
+                <div class="card">
+                    <div class="card-header">
+                        <h6 class="card-title mb-0">
+                            <i class="bi bi-speedometer2 me-2"></i>Rasio Keuangan
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="row text-center">
+                            <div class="col-12 mb-3">
+                                <h6 class="text-muted">Current Ratio</h6>
+                                <h4 class="mb-0">
+                                    {% if total_kewajiban > 0 %}
+                                        {{ total_aktiva|floatformat:2 }}:1
+                                    {% else %}
+                                        ∞
+                                    {% endif %}
+                                </h4>
+                                <small class="text-muted">Aktiva / Kewajiban</small>
+                            </div>
+                            <div class="col-12 mb-3">
+                                <h6 class="text-muted">Profit Margin</h6>
+                                <h4 class="mb-0">
+                                    {% if total_pendapatan > 0 %}
+                                        {{ profit_margin|floatformat:1 }}%
+                                    {% else %}
+                                        0%
+                                    {% endif %}
+                                </h4>
+                                <small class="text-muted">Laba Bersih / Pendapatan</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-6 mb-4">
+                <div class="card">
+                    <div class="card-header">
+                        <h6 class="card-title mb-0">
+                            <i class="bi bi-clipboard-check me-2"></i>Kesimpulan Analisis
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        <ul class="list-unstyled">
+                            <li class="mb-2">
+                                <i class="bi bi-circle-fill me-2 {% if total_aktiva == total_kewajiban|add:total_modal_display %}text-success{% else %}text-warning{% endif %}"></i>
+                                <span class="fw-semibold">Neraca:</span>
+                                {% if total_aktiva == total_kewajiban|add:total_modal_display %}
+                                    Seimbang
+                                {% else %}
+                                    Perlu koreksi
+                                {% endif %}
+                            </li>
+                            <li class="mb-2">
+                                <i class="bi bi-circle-fill me-2 {% if total_pendapatan > total_beban %}text-success{% elif total_pendapatan == total_beban %}text-warning{% else %}text-danger{% endif %}"></i>
+                                <span class="fw-semibold">Profitabilitas:</span>
+                                {% if total_pendapatan > total_beban %}
+                                    Menguntungkan
+                                {% elif total_pendapatan == total_beban %}
+                                    Impas
+                                {% else %}
+                                    Rugi
+                                {% endif %}
+                            </li>
+                            <li class="mb-2">
+                                <i class="bi bi-circle-fill me-2 {% if kas_akhir > kas_awal %}text-success{% elif kas_akhir == kas_awal %}text-warning{% else %}text-danger{% endif %}"></i>
+                                <span class="fw-semibold">Likuiditas:</span>
+                                {% if kas_akhir > kas_awal %}
+                                    Meningkat
+                                {% elif kas_akhir == kas_awal %}
+                                    Stabil
+                                {% else %}
+                                    Menurun
+                                {% endif %}
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Dark mode styling for Laporan Keuangan */
+    [data-theme="dark"] .page-title {
+        color: var(--text-color) !important;
+    }
+    
+    [data-theme="dark"] .page-subtitle {
+        color: var(--muted-text) !important;
+    }
+    
+    [data-theme="dark"] .btn-action {
+        border-width: 2px;
+        font-weight: 500;
+        transition: all 0.3s ease;
+    }
+    
+    [data-theme="dark"] .btn-outline-danger {
+        color: #ef4444 !important;
+        border-color: #ef4444 !important;
+    }
+    
+    [data-theme="dark"] .btn-outline-danger:hover {
+        background-color: #ef4444 !important;
+        color: #ffffff !important;
+    }
+    
+    [data-theme="dark"] .btn-outline-success {
+        color: #10b981 !important;
+        border-color: #10b981 !important;
+    }
+    
+    [data-theme="dark"] .btn-outline-success:hover {
+        background-color: #10b981 !important;
+        color: #ffffff !important;
+    }
+    
+    [data-theme="dark"] .btn-outline-info {
+        color: #06b6d4 !important;
+        border-color: #06b6d4 !important;
+    }
+    
+    [data-theme="dark"] .btn-outline-info:hover {
+        background-color: #06b6d4 !important;
+        color: #ffffff !important;
+    }
+    
+    [data-theme="dark"] .btn-outline-primary {
+        color: var(--primary-color) !important;
+        border-color: var(--primary-color) !important;
+    }
+    
+    [data-theme="dark"] .btn-outline-primary:hover {
+        background-color: var(--primary-color) !important;
+        color: #ffffff !important;
+    }
+    
+    /* Table styling for dark mode */
+    [data-theme="dark"] .table-primary th {
+        background-color: var(--primary-color) !important;
+        color: #ffffff !important;
+        border-color: var(--border-color) !important;
+    }
+    
+    [data-theme="dark"] .table-success th {
+        background-color: #10b981 !important;
+        color: #ffffff !important;
+        border-color: var(--border-color) !important;
+    }
+    
+    [data-theme="dark"] .table-warning th {
+        background-color: #f59e0b !important;
+        color: #ffffff !important;
+        border-color: var(--border-color) !important;
+    }
+    
+    [data-theme="dark"] .table-info th {
+        background-color: #06b6d4 !important;
+        color: #ffffff !important;
+        border-color: var(--border-color) !important;
+    }
+    
+    [data-theme="dark"] .table-light {
+        background-color: var(--bg-color) !important;
+    }
+    
+    [data-theme="dark"] .table-hover tbody tr:hover {
+        background-color: var(--card-bg) !important;
+        color: var(--text-color) !important;
+    }
+    
+    [data-theme="dark"] .table-dark th {
+        background-color: var(--bg-color) !important;
+        color: var(--text-color) !important;
+        border-color: var(--border-color) !important;
+    }
+    
+    [data-theme="dark"] .table-dark .text-success {
+        color: #34d399 !important;
+    }
+    
+    [data-theme="dark"] .table-dark .text-danger {
+        color: #f87171 !important;
+    }
+    
+    [data-theme="dark"] .table-dark .text-primary {
+        color: #60a5fa !important;
+    }
+    
+    /* Badge styling for dark mode */
+    [data-theme="dark"] .badge.bg-success {
+        background-color: #10b981 !important;
+        color: #ffffff !important;
+    }
+    
+    [data-theme="dark"] .badge.bg-danger {
+        background-color: #ef4444 !important;
+        color: #ffffff !important;
+    }
+    
+    [data-theme="dark"] .badge.bg-primary {
+        background-color: var(--primary-color) !important;
+        color: #ffffff !important;
+    }
+    
+    [data-theme="dark"] .badge.bg-warning {
+        background-color: #f59e0b !important;
+        color: #ffffff !important;
+    }
+    
+    [data-theme="dark"] .badge.bg-info {
+        background-color: #06b6d4 !important;
+        color: #ffffff !important;
+    }
+    
+    /* Text color adjustments */
+    [data-theme="dark"] .fw-semibold,
+    [data-theme="dark"] .fw-bold {
+        color: var(--text-color) !important;
+    }
+    
+    [data-theme="dark"] .text-success {
+        color: #34d399 !important;
+    }
+    
+    [data-theme="dark"] .text-danger {
+        color: #f87171 !important;
+    }
+    
+    [data-theme="dark"] .text-primary {
+        color: #60a5fa !important;
+    }
+    
+    [data-theme="dark"] .text-warning {
+        color: #fbbf24 !important;
+    }
+    
+    [data-theme="dark"] .text-muted {
+        color: var(--muted-text) !important;
+    }
+    
+    /* Card header styling */
+    [data-theme="dark"] .card-header {
+        background-color: var(--card-bg) !important;
+        border-bottom-color: var(--border-color) !important;
+    }
+    
+    [data-theme="dark"] .card-header .card-title {
+        color: var(--text-color) !important;
+        font-weight: 600;
+    }
+    
+    [data-theme="dark"] .card-header.bg-success {
+        background: linear-gradient(135deg, #10b981, #047857) !important;
+        color: #ffffff !important;
+    }
+    
+    [data-theme="dark"] .card-header.bg-warning {
+        background: linear-gradient(135deg, #f59e0b, #d97706) !important;
+        color: #ffffff !important;
+    }
+    
+    [data-theme="dark"] .card-header.bg-info {
+        background: linear-gradient(135deg, #06b6d4, #0891b2) !important;
+        color: #ffffff !important;
+    }
+    
+    [data-theme="dark"] .card-header.bg-primary {
+        background: linear-gradient(135deg, var(--primary-color), #1e40af) !important;
+        color: #ffffff !important;
+    }
+    
+    /* Summary cards */
+    [data-theme="dark"] .bg-light.border {
+        background-color: var(--card-bg) !important;
+        border-color: var(--border-color) !important;
+    }
+    
+    [data-theme="dark"] .bg-light.border .text-muted {
+        color: var(--muted-text) !important;
+    }
+    
+    [data-theme="dark"] .bg-light.border .fw-bold {
+        color: var(--text-color) !important;
+    }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Set default date range to current month
+    const startDateInput = document.querySelector('input[name="start_date"]');
+    const endDateInput = document.querySelector('input[name="end_date"]');
+    
+    if (!startDateInput.value && !endDateInput.value) {
+        const now = new Date();
+        const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
+        const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+        
+        startDateInput.value = firstDay.toISOString().split('T')[0];
+        endDateInput.value = lastDay.toISOString().split('T')[0];
+    }
+});
+
+function exportAllToExcel() {
+    // Create a comprehensive Excel export
+    let csvContent = 'LAPORAN KEUANGAN LENGKAP\n';
+    csvContent += `Periode: ${document.querySelector('input[name="start_date"]').value} - ${document.querySelector('input[name="end_date"]').value}\n\n`;
+    
+    // Export each table
+    const tables = document.querySelectorAll('.table');
+    tables.forEach((table, index) => {
+        const rows = table.querySelectorAll('tr');
+        rows.forEach(row => {
+            const cols = row.querySelectorAll('td, th');
+            const rowData = [];
+            cols.forEach(col => {
+                rowData.push(col.innerText.replace(/,/g, ';'));
+            });
+            csvContent += rowData.join(',') + '\n';
+        });
+        csvContent += '\n';
+    });
+    
+    const csvFile = new Blob([csvContent], { type: 'text/csv' });
+    const downloadLink = document.createElement('a');
+    downloadLink.download = 'laporan_keuangan_lengkap.csv';
+    downloadLink.href = window.URL.createObjectURL(csvFile);
+    downloadLink.style.display = 'none';
+    document.body.appendChild(downloadLink);
+    downloadLink.click();
+    document.body.removeChild(downloadLink);
+}
+
+function printAllReports() {
+    window.print();
+}
+
+// Print styles
+const printCSS = `
+    @media print {
+        .btn, .nav-tabs, .alert {
+            display: none !important;
+        }
+        .tab-content .tab-pane {
+            display: block !important;
+        }
+        .card {
+            border: none !important;
+            box-shadow: none !important;
+            page-break-inside: avoid;
+        }
+        .table th {
+            background-color: #f8f9fa !important;
+            color: #000 !important;
+        }
+        body {
+            background-color: white !important;
+        }
+    }
+`;
+
+const style = document.createElement('style');
+style.textContent = printCSS;
+document.head.appendChild(style);
+</script>
+{% endblock %}

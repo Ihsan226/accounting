@@ -1,0 +1,416 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Daftar Akun - Akuntansi{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h2 class="mb-0">
+                        <i class="bi bi-list-ul text-primary me-2"></i>
+                        Daftar Akun
+                    </h2>
+                    <p class="text-muted mb-0">Kelola chart of accounts perusahaan</p>
+                </div>
+                <a href="{% url 'tambah_akun' %}" class="btn btn-primary btn-action">
+                    <i class="bi bi-plus-circle me-2"></i>Tambah Akun
+                </a>
+            </div>
+
+            <!-- Messages -->
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+
+            <!-- Filter dan Search -->
+            <div class="card mb-4">
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4">
+                            <label class="form-label">Cari Akun</label>
+                            <input type="text" id="searchInput" class="form-control" placeholder="Cari berdasarkan kode atau nama...">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Filter Tipe</label>
+                            <select id="tipeFilter" class="form-select">
+                                <option value="">Semua Tipe</option>
+                                <option value="Aktiva Lancar">Aktiva Lancar</option>
+                                <option value="Aktiva Tetap">Aktiva Tetap</option>
+                                <option value="Kewajiban Lancar">Kewajiban Lancar</option>
+                                <option value="Kewajiban Jangka Panjang">Kewajiban Jangka Panjang</option>
+                                <option value="Modal">Modal</option>
+                                <option value="Pendapatan">Pendapatan</option>
+                                <option value="Beban">Beban</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Export</label>
+                            <div class="d-flex gap-2">
+                                <button class="btn btn-success btn-sm" onclick="exportToExcel()">
+                                    <i class="bi bi-file-excel me-1"></i>Excel
+                                </button>
+                                <button class="btn btn-danger btn-sm" onclick="exportToPDF()">
+                                    <i class="bi bi-file-pdf me-1"></i>PDF
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tabel Akun -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-table me-2"></i>
+                        Daftar Akun ({{ akun_list.count }} akun)
+                    </h5>
+                </div>
+                <div class="card-body p-0">
+                    {% if akun_list %}
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0" id="akunTable">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th width="10%">Kode</th>
+                                        <th width="40%">Nama Akun</th>
+                                        <th width="25%">Tipe</th>
+                                        <th width="15%">Status</th>
+                                        <th width="10%" class="text-center">Aksi</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for akun in akun_list %}
+                                        <tr>
+                                            <td>
+                                                <span class="badge bg-secondary">{{ akun.kode }}</span>
+                                            </td>
+                                            <td>
+                                                <strong>{{ akun.nama }}</strong>
+                                            </td>
+                                            <td>
+                                                {% if akun.tipe == 'Aktiva Lancar' or akun.tipe == 'Aktiva Tetap' %}
+                                                    <span class="badge bg-primary">{{ akun.tipe }}</span>
+                                                {% elif akun.tipe == 'Kewajiban Lancar' or akun.tipe == 'Kewajiban Jangka Panjang' %}
+                                                    <span class="badge bg-warning">{{ akun.tipe }}</span>
+                                                {% elif akun.tipe == 'Modal' %}
+                                                    <span class="badge bg-info">{{ akun.tipe }}</span>
+                                                {% elif akun.tipe == 'Pendapatan' %}
+                                                    <span class="badge bg-success">{{ akun.tipe }}</span>
+                                                {% else %}
+                                                    <span class="badge bg-danger">{{ akun.tipe }}</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                {% with jurnal_count=akun.jurnal_set.count %}
+                                                    {% if jurnal_count > 0 %}
+                                                        <span class="badge bg-success">
+                                                            <i class="bi bi-check-circle me-1"></i>
+                                                            Aktif ({{ jurnal_count }} transaksi)
+                                                        </span>
+                                                    {% else %}
+                                                        <span class="badge bg-secondary">
+                                                            <i class="bi bi-circle me-1"></i>
+                                                            Tidak Aktif
+                                                        </span>
+                                                    {% endif %}
+                                                {% endwith %}
+                                            </td>
+                                            <td class="text-center">
+                                                <div class="btn-group" role="group">
+                                                    <a href="{% url 'edit_akun' akun.id %}"
+                                                       class="btn btn-sm btn-outline-primary"
+                                                       title="Edit Akun">
+                                                        <i class="bi bi-pencil"></i>
+                                                    </a>
+                                                        {# Always navigate to confirmation page; that page will explain why deletion may be blocked #}
+                                                        {% with jurnal_count=akun.jurnal_set.count %}
+                                                            <a href="{% url 'hapus_akun' akun.id %}"
+                                                               class="btn btn-sm btn-outline-danger"
+                                                               title="{% if jurnal_count > 0 %}Akun digunakan dalam {{ jurnal_count }} transaksi{% else %}Hapus Akun{% endif %}">
+                                                                <i class="bi bi-trash"></i>
+                                                            </a>
+                                                        {% endwith %}
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="text-center p-5">
+                            <i class="bi bi-inbox display-1 text-muted"></i>
+                            <h4 class="mt-3">Belum Ada Akun</h4>
+                            <p class="text-muted">Silakan tambahkan akun baru untuk memulai.</p>
+                            <a href="{% url 'tambah_akun' %}" class="btn btn-primary">
+                                <i class="bi bi-plus-circle me-2"></i>Tambah Akun Pertama
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Search functionality
+document.getElementById('searchInput').addEventListener('keyup', function() {
+    const searchTerm = this.value.toLowerCase();
+    const table = document.getElementById('akunTable');
+    const rows = table.getElementsByTagName('tbody')[0].getElementsByTagName('tr');
+    
+    for (let i = 0; i < rows.length; i++) {
+        const row = rows[i];
+        const kode = row.cells[0].textContent.toLowerCase();
+        const nama = row.cells[1].textContent.toLowerCase();
+        
+        if (kode.includes(searchTerm) || nama.includes(searchTerm)) {
+            row.style.display = '';
+        } else {
+            row.style.display = 'none';
+        }
+    }
+});
+
+// Filter by type
+document.getElementById('tipeFilter').addEventListener('change', function() {
+    const filterValue = this.value;
+    const table = document.getElementById('akunTable');
+    const rows = table.getElementsByTagName('tbody')[0].getElementsByTagName('tr');
+    
+    for (let i = 0; i < rows.length; i++) {
+        const row = rows[i];
+        const tipe = row.cells[2].textContent.trim();
+        
+        if (filterValue === '' || tipe.includes(filterValue)) {
+            row.style.display = '';
+        } else {
+            row.style.display = 'none';
+        }
+    }
+});
+
+// Export functions (placeholder)
+function exportToExcel() {
+    window.location.href = '/akun/excel/';
+}
+
+function exportToPDF() {
+    window.location.href = '/akun/pdf/';
+}
+
+// Ensure delete (trash) buttons reliably navigate to the confirmation page.
+// This forces navigation in case other scripts or CSS interfere with the anchor click.
+document.addEventListener('DOMContentLoaded', function() {
+    const table = document.getElementById('akunTable');
+    if (!table) return;
+
+    // Select anchors in the actions column that point to the hapus_akun URL pattern
+    const deleteAnchors = table.querySelectorAll('a.btn-outline-danger');
+    deleteAnchors.forEach(a => {
+        // only attach to anchors that likely target the hapus_akun view
+        if (a.getAttribute('href') && a.getAttribute('href').includes('/akun/hapus/')) {
+            a.addEventListener('click', function(e) {
+                // Stop other listeners from blocking the click
+                e.stopPropagation();
+                // Some browsers/extensions may block default navigation; force it
+                try {
+                    window.location.href = this.href;
+                } catch (err) {
+                    // fallback: set location via assign
+                    window.location.assign(this.href);
+                }
+            });
+        }
+    });
+});
+</script>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Dark mode styling for Daftar Akun */
+    [data-theme="dark"] h2,
+    [data-theme="dark"] h4,
+    [data-theme="dark"] h5 {
+        color: var(--text-color) !important;
+    }
+    
+    [data-theme="dark"] .text-primary {
+        color: var(--primary-color) !important;
+    }
+    
+    [data-theme="dark"] .text-muted {
+        color: var(--muted-text) !important;
+    }
+    
+    [data-theme="dark"] .btn-primary.btn-action {
+        background-color: var(--primary-color) !important;
+        border-color: var(--primary-color) !important;
+        color: #ffffff !important;
+    }
+    
+    [data-theme="dark"] .btn-primary.btn-action:hover {
+        background-color: #3b82f6 !important;
+        border-color: #3b82f6 !important;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(96, 165, 250, 0.3);
+    }
+    
+    /* Alert styling for dark mode */
+    [data-theme="dark"] .alert-success {
+        background-color: rgba(16, 185, 129, 0.1) !important;
+        border-color: #10b981 !important;
+        color: #34d399 !important;
+    }
+    
+    [data-theme="dark"] .alert-danger {
+        background-color: rgba(239, 68, 68, 0.1) !important;
+        border-color: #ef4444 !important;
+        color: #f87171 !important;
+    }
+    
+    [data-theme="dark"] .alert-warning {
+        background-color: rgba(245, 158, 11, 0.1) !important;
+        border-color: #f59e0b !important;
+        color: #fbbf24 !important;
+    }
+    
+    [data-theme="dark"] .alert-info {
+        background-color: rgba(59, 130, 246, 0.1) !important;
+        border-color: #3b82f6 !important;
+        color: #60a5fa !important;
+    }
+    
+    /* Form controls */
+    [data-theme="dark"] .form-label {
+        color: var(--text-color) !important;
+        font-weight: 500;
+    }
+    
+    /* Button styling */
+    [data-theme="dark"] .btn-success {
+        background-color: #10b981 !important;
+        border-color: #10b981 !important;
+        color: #ffffff !important;
+    }
+    
+    [data-theme="dark"] .btn-success:hover {
+        background-color: #059669 !important;
+        border-color: #059669 !important;
+    }
+    
+    [data-theme="dark"] .btn-danger {
+        background-color: #ef4444 !important;
+        border-color: #ef4444 !important;
+        color: #ffffff !important;
+    }
+    
+    [data-theme="dark"] .btn-danger:hover {
+        background-color: #dc2626 !important;
+        border-color: #dc2626 !important;
+    }
+    
+    /* Table styling for dark mode */
+    [data-theme="dark"] .table-light th {
+        background-color: var(--card-bg) !important;
+        color: var(--text-color) !important;
+        border-color: var(--border-color) !important;
+        font-weight: 600;
+    }
+    
+    [data-theme="dark"] .table-hover tbody tr:hover {
+        background-color: var(--card-bg) !important;
+        color: var(--text-color) !important;
+    }
+    
+    [data-theme="dark"] .table tbody td {
+        color: var(--accent-text) !important;
+        border-color: var(--border-color) !important;
+    }
+    
+    [data-theme="dark"] .table tbody td strong {
+        color: var(--text-color) !important;
+        font-weight: 600;
+    }
+    
+    /* Badge styling for dark mode */
+    [data-theme="dark"] .badge.bg-secondary {
+        background-color: var(--card-bg) !important;
+        color: var(--text-color) !important;
+        border: 1px solid var(--border-color) !important;
+    }
+    
+    [data-theme="dark"] .badge.bg-primary {
+        background-color: var(--primary-color) !important;
+        color: #ffffff !important;
+    }
+    
+    [data-theme="dark"] .badge.bg-warning {
+        background-color: #f59e0b !important;
+        color: #ffffff !important;
+    }
+    
+    [data-theme="dark"] .badge.bg-info {
+        background-color: #06b6d4 !important;
+        color: #ffffff !important;
+    }
+    
+    [data-theme="dark"] .badge.bg-success {
+        background-color: #10b981 !important;
+        color: #ffffff !important;
+    }
+    
+    [data-theme="dark"] .badge.bg-danger {
+        background-color: #ef4444 !important;
+        color: #ffffff !important;
+    }
+    
+    /* Button group styling */
+    [data-theme="dark"] .btn-outline-primary {
+        color: var(--primary-color) !important;
+        border-color: var(--primary-color) !important;
+    }
+    
+    [data-theme="dark"] .btn-outline-primary:hover {
+        background-color: var(--primary-color) !important;
+        color: #ffffff !important;
+    }
+    
+    [data-theme="dark"] .btn-outline-danger {
+        color: #ef4444 !important;
+        border-color: #ef4444 !important;
+    }
+    
+    [data-theme="dark"] .btn-outline-danger:hover {
+        background-color: #ef4444 !important;
+        color: #ffffff !important;
+    }
+    
+    /* Card header styling */
+    [data-theme="dark"] .card-header {
+        background-color: var(--card-bg) !important;
+        border-bottom-color: var(--border-color) !important;
+    }
+    
+    [data-theme="dark"] .card-header .card-title {
+        color: var(--text-color) !important;
+        font-weight: 600;
+    }
+    
+    /* Empty state styling */
+    [data-theme="dark"] .display-1 {
+        color: var(--muted-text) !important;
+    }
+</style>
+{% endblock %}

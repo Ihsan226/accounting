@@ -1,0 +1,278 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Profil Pengguna - Akuntansi{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <!-- Header -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h1 class="page-title mb-2">
+                        <i class="bi bi-person-circle text-primary me-2"></i>
+                        Profil Pengguna
+                    </h1>
+                    <p class="page-subtitle text-muted mb-0">
+                        Kelola informasi profil dan foto profil Anda
+                    </p>
+                </div>
+                <a href="{% url 'dashboard' %}" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left me-2"></i>Kembali ke Dashboard
+                </a>
+            </div>
+
+            <div class="row">
+                <!-- Profile Picture Card -->
+                <div class="col-lg-4 mb-4">
+                    <div class="card shadow-sm">
+                        <div class="card-body text-center">
+                            <div class="profile-picture-container mb-3">
+                                {% if profile.profile_picture %}
+                                    <img src="{{ profile.profile_picture.url }}" 
+                                         alt="Profile Picture" 
+                                         class="profile-picture rounded-circle mb-3"
+                                         id="profile-preview">
+                                {% else %}
+                                    <div class="profile-picture-placeholder rounded-circle mb-3 mx-auto d-flex align-items-center justify-content-center"
+                                         id="profile-preview">
+                                        <i class="bi bi-person-fill text-muted" style="font-size: 4rem;"></i>
+                                    </div>
+                                {% endif %}
+                            </div>
+                            
+                            <h5 class="card-title">{{ user.get_full_name|default:user.username }}</h5>
+                            <p class="text-muted">{{ user.email }}</p>
+                            
+                            {% if profile.bio %}
+                                <p class="card-text">{{ profile.bio }}</p>
+                            {% endif %}
+                            
+                            <div class="mt-3">
+                                <small class="text-muted">
+                                    <i class="bi bi-calendar3 me-1"></i>
+                                    Bergabung sejak {{ user.date_joined|date:"d M Y" }}
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Profile Form Card -->
+                <div class="col-lg-8">
+                    <div class="card shadow-sm">
+                        <div class="card-header">
+                            <h5 class="mb-0">
+                                <i class="bi bi-pencil-square me-2"></i>Edit Profil
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <form method="post" enctype="multipart/form-data">
+                                {% csrf_token %}
+                                
+                                <!-- User Information -->
+                                <div class="row mb-4">
+                                    <div class="col-12">
+                                        <h6 class="border-bottom pb-2 mb-3">Informasi Dasar</h6>
+                                    </div>
+                                    
+                                    <div class="col-md-6 mb-3">
+                                        <label for="{{ user_form.first_name.id_for_label }}" class="form-label fw-semibold">
+                                            <i class="bi bi-person me-2"></i>Nama Depan
+                                        </label>
+                                        {{ user_form.first_name }}
+                                        {% if user_form.first_name.errors %}
+                                            <div class="invalid-feedback d-block">
+                                                {{ user_form.first_name.errors.0 }}
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                    
+                                    <div class="col-md-6 mb-3">
+                                        <label for="{{ user_form.last_name.id_for_label }}" class="form-label fw-semibold">
+                                            <i class="bi bi-person me-2"></i>Nama Belakang
+                                        </label>
+                                        {{ user_form.last_name }}
+                                        {% if user_form.last_name.errors %}
+                                            <div class="invalid-feedback d-block">
+                                                {{ user_form.last_name.errors.0 }}
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                    
+                                    <div class="col-12 mb-3">
+                                        <label for="{{ user_form.email.id_for_label }}" class="form-label fw-semibold">
+                                            <i class="bi bi-envelope me-2"></i>Email
+                                        </label>
+                                        {{ user_form.email }}
+                                        {% if user_form.email.errors %}
+                                            <div class="invalid-feedback d-block">
+                                                {{ user_form.email.errors.0 }}
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+
+                                <!-- Profile Information -->
+                                <div class="row mb-4">
+                                    <div class="col-12">
+                                        <h6 class="border-bottom pb-2 mb-3">Informasi Profil</h6>
+                                    </div>
+                                    
+                                    <div class="col-12 mb-3">
+                                        <label for="{{ profile_form.profile_picture.id_for_label }}" class="form-label fw-semibold">
+                                            <i class="bi bi-camera me-2"></i>Foto Profil
+                                        </label>
+                                        {{ profile_form.profile_picture }}
+                                        {% if profile_form.profile_picture.errors %}
+                                            <div class="invalid-feedback d-block">
+                                                {{ profile_form.profile_picture.errors.0 }}
+                                            </div>
+                                        {% endif %}
+                                        <div class="form-text">
+                                            <i class="bi bi-info-circle me-1"></i>
+                                            Format yang didukung: JPG, PNG, GIF. Maksimal ukuran: 5MB
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="col-12 mb-3">
+                                        <label for="{{ profile_form.bio.id_for_label }}" class="form-label fw-semibold">
+                                            <i class="bi bi-file-text me-2"></i>Bio
+                                        </label>
+                                        {{ profile_form.bio }}
+                                        {% if profile_form.bio.errors %}
+                                            <div class="invalid-feedback d-block">
+                                                {{ profile_form.bio.errors.0 }}
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+
+                                <!-- Action Buttons -->
+                                <div class="d-flex justify-content-end gap-2">
+                                    <a href="{% url 'dashboard' %}" class="btn btn-secondary">
+                                        <i class="bi bi-x-circle me-2"></i>Batal
+                                    </a>
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="bi bi-check-circle me-2"></i>Simpan Perubahan
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap');
+    
+    body, .card, .btn, h1, h2, h3, h4, h5, h6 {
+        font-family: 'Poppins', 'Segoe UI', system-ui, -apple-system, sans-serif;
+    }
+    
+    .page-title {
+        font-weight: 700;
+        color: #1e293b;
+        font-size: 2.25rem;
+    }
+    
+    .page-subtitle {
+        font-size: 1.1rem;
+        color: #64748b;
+    }
+    
+    .profile-picture, .profile-picture-placeholder {
+        width: 150px;
+        height: 150px;
+        object-fit: cover;
+        border: 4px solid #e2e8f0;
+        transition: all 0.3s ease;
+    }
+    
+    .profile-picture:hover {
+        border-color: #3b82f6;
+        transform: scale(1.05);
+    }
+    
+    .profile-picture-placeholder {
+        background: linear-gradient(135deg, #f1f5f9, #e2e8f0);
+        border: 2px dashed #cbd5e1;
+    }
+    
+    .card {
+        border: 0;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        transition: all 0.3s ease;
+    }
+    
+    .card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+    }
+    
+    .form-label {
+        font-weight: 600;
+        color: #374151;
+    }
+    
+    .btn {
+        font-weight: 500;
+        padding: 0.5rem 1.5rem;
+        border-radius: 8px;
+        transition: all 0.3s ease;
+    }
+    
+    .btn:hover {
+        transform: translateY(-1px);
+    }
+    
+    .card-header {
+        background: linear-gradient(135deg, #f8fafc, #f1f5f9);
+        border-bottom: 1px solid #e2e8f0;
+    }
+</style>
+
+<script>
+// Preview foto profil sebelum upload
+document.getElementById('profile-picture-input').addEventListener('change', function(event) {
+    const file = event.target.files[0];
+    const preview = document.getElementById('profile-preview');
+    
+    if (file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            if (preview.tagName === 'IMG') {
+                preview.src = e.target.result;
+            } else {
+                // Replace placeholder dengan image
+                const img = document.createElement('img');
+                img.src = e.target.result;
+                img.alt = 'Profile Picture';
+                img.className = 'profile-picture rounded-circle mb-3';
+                img.id = 'profile-preview';
+                preview.parentNode.replaceChild(img, preview);
+            }
+        };
+        reader.readAsDataURL(file);
+    }
+});
+
+// Animate cards on load
+document.addEventListener('DOMContentLoaded', function() {
+    const cards = document.querySelectorAll('.card');
+    cards.forEach((card, index) => {
+        card.style.opacity = '0';
+        card.style.transform = 'translateY(20px)';
+        setTimeout(() => {
+            card.style.transition = 'all 0.6s ease';
+            card.style.opacity = '1';
+            card.style.transform = 'translateY(0)';
+        }, index * 150);
+    });
+});
+</script>
+{% endblock %}

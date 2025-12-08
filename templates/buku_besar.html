@@ -1,0 +1,487 @@
+{% extends 'base.html' %}
+
+{% block title %}Buku Besar - Akuntansi{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h1 class="page-title">Buku Besar</h1>
+        <p class="page-subtitle">Ringkasan transaksi per akun</p>
+    </div>
+    <div>
+        <a href="/input/" class="btn btn-primary btn-action">
+            <i class="bi bi-plus-circle me-2"></i>Tambah Transaksi
+        </a>
+    </div>
+</div>
+
+<!-- Filter Section -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-3">
+            <div class="col-md-4">
+                <label class="form-label fw-semibold">Pilih Akun</label>
+                <select class="form-select" name="akun_id">
+                    <option value="">Semua Akun</option>
+                    {% for akun in all_akun %}
+                    <option value="{{ akun.id }}" {% if request.GET.akun_id == akun.id|stringformat:"s" %}selected{% endif %}>
+                        {{ akun.kode }} - {{ akun.nama }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label fw-semibold">Dari Tanggal</label>
+                <input type="date" class="form-control" name="start_date" value="{{ request.GET.start_date }}">
+            </div>
+            <div class="col-md-3">
+                <label class="form-label fw-semibold">Sampai Tanggal</label>
+                <input type="date" class="form-control" name="end_date" value="{{ request.GET.end_date }}">
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">&nbsp;</label>
+                <div class="d-grid">
+                    <button type="submit" class="btn btn-outline-primary">
+                        <i class="bi bi-search me-2"></i>Filter
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Export Section -->
+<div class="card mb-4">
+    <div class="card-body">
+        <div class="d-flex justify-content-between align-items-center">
+            <h6 class="card-title mb-0">
+                <i class="bi bi-download me-2"></i>Export Buku Besar
+            </h6>
+            <div class="d-flex gap-2">
+                <a href="{% url 'buku_besar_pdf' %}{% if request.GET.akun_id %}?akun_id={{ request.GET.akun_id }}{% endif %}" class="btn btn-outline-danger btn-sm" target="_blank">
+                    <i class="bi bi-file-earmark-pdf me-2"></i>Export PDF
+                </a>
+                <button class="btn btn-outline-success btn-sm" onclick="exportAllToExcel()">
+                    <i class="bi bi-file-earmark-excel me-2"></i>Export Excel
+                </button>
+                <button class="btn btn-outline-info btn-sm" onclick="printReport()">
+                    <i class="bi bi-printer me-2"></i>Print
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if data %}
+    {% for item in data %}
+    <div class="card mb-4">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <div>
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-book me-2"></i>
+                    {{ item.akun.nama }}
+                </h5>
+                <small class="text-muted">Kode Akun: {{ item.akun.kode }}</small>
+            </div>
+            <div class="d-flex gap-2">
+                <span class="badge bg-primary">{{ item.akun.jenis }}</span>
+                <a href="{% url 'buku_besar_pdf' %}?akun_id={{ item.akun.id }}" class="btn btn-sm btn-outline-danger" target="_blank">
+                    <i class="bi bi-file-earmark-pdf"></i>
+                </a>
+                <button class="btn btn-sm btn-outline-success" onclick="exportAccountToExcel('{{ item.akun.nama }}', '{{ item.akun.kode }}')">
+                    <i class="bi bi-file-earmark-excel"></i>
+                </button>
+            </div>
+        </div>
+        <div class="card-body p-0">
+            {% if item.jurnal %}
+            <div class="table-responsive">
+                <table class="table table-hover mb-0" id="table-{{ item.akun.id }}">
+                    <thead class="table-secondary">
+                        <tr>
+                            <th width="12%">Tanggal</th>
+                            <th width="10%">No. Ref</th>
+                            <th width="48%">Deskripsi</th>
+                            <th width="15%" class="text-end">Debet (Rp)</th>
+                            <th width="15%" class="text-end">Kredit (Rp)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for j in item.jurnal %}
+                        <tr>
+                            <td>
+                                <span class="fw-semibold">{{ j.transaksi.tanggal|date:"d/m/Y" }}</span>
+                            </td>
+                            <td>
+                                <span class="badge bg-secondary">AUTO-{{ j.transaksi.id }}</span>
+                            </td>
+                            <td>
+                                <div class="fw-semibold">{{ j.transaksi.deskripsi }}</div>
+                                {% if j.debit > 0 %}
+                                    <small class="text-success"><i class="bi bi-arrow-up me-1"></i>Dari: {{ j.transaksi.akun_kredit.nama }}</small>
+                                {% else %}
+                                    <small class="text-danger"><i class="bi bi-arrow-down me-1"></i>Ke: {{ j.transaksi.akun_debet.nama }}</small>
+                                {% endif %}
+                            </td>
+                            <td class="text-end">
+                                {% if j.debit > 0 %}
+                                    <span class="fw-semibold text-success">{{ j.debit|floatformat:0 }}</span>
+                                {% else %}
+                                    <span class="text-muted">-</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-end">
+                                {% if j.kredit > 0 %}
+                                    <span class="fw-semibold text-danger">{{ j.kredit|floatformat:0 }}</span>
+                                {% else %}
+                                    <span class="text-muted">-</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                    <tfoot class="table-dark">
+                        <tr>
+                            <th colspan="3" class="text-end">TOTAL {{ item.akun.nama }}:</th>
+                            <th class="text-end">
+                                <span class="fw-bold text-success">
+                                    Rp {{ item.total_debit|default:0|floatformat:0 }}
+                                </span>
+                            </th>
+                            <th class="text-end">
+                                <span class="fw-bold text-danger">
+                                    Rp {{ item.total_kredit|default:0|floatformat:0 }}
+                                </span>
+                            </th>
+                        </tr>
+                        <tr>
+                            <th colspan="3" class="text-end">SALDO {{ item.akun.nama }}:</th>
+                            <th colspan="2" class="text-end">
+                                {% with saldo=item.total_debit|add:item.total_kredit|add:"-"|add:item.total_kredit %}
+                                {% if item.total_debit > item.total_kredit %}
+                                    <span class="fw-bold text-success">
+                                        Rp {{ item.total_debit|add:"-"|add:item.total_kredit|floatformat:0 }} (Debet)
+                                    </span>
+                                {% elif item.total_kredit > item.total_debit %}
+                                    <span class="fw-bold text-danger">
+                                        Rp {{ item.total_kredit|add:"-"|add:item.total_debit|floatformat:0 }} (Kredit)
+                                    </span>
+                                {% else %}
+                                    <span class="fw-bold text-secondary">Rp 0 (Seimbang)</span>
+                                {% endif %}
+                                {% endwith %}
+                            </th>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center py-4">
+                <i class="bi bi-inbox fs-3 text-muted mb-2"></i>
+                <p class="text-muted mb-0">Belum ada transaksi untuk akun ini</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    {% endfor %}
+
+    <!-- Summary Section -->
+    <div class="row mt-4">
+        <div class="col-md-12">
+            <div class="card bg-light">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-calculator me-2"></i>
+                        Ringkasan Buku Besar
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3 text-center">
+                            <h4 class="text-primary">{{ data|length }}</h4>
+                            <p class="text-muted mb-0">Total Akun</p>
+                        </div>
+                        <div class="col-md-3 text-center">
+                            <h4 class="text-success">Rp {{ grand_total_debit|default:0|floatformat:0 }}</h4>
+                            <p class="text-muted mb-0">Total Debet</p>
+                        </div>
+                        <div class="col-md-3 text-center">
+                            <h4 class="text-danger">Rp {{ grand_total_kredit|default:0|floatformat:0 }}</h4>
+                            <p class="text-muted mb-0">Total Kredit</p>
+                        </div>
+                        <div class="col-md-3 text-center">
+                            {% if grand_total_debit == grand_total_kredit %}
+                                <h4 class="text-success"><i class="bi bi-check-circle"></i></h4>
+                                <p class="text-muted mb-0">Seimbang</p>
+                            {% else %}
+                                <h4 class="text-warning"><i class="bi bi-exclamation-triangle"></i></h4>
+                                <p class="text-muted mb-0">Tidak Seimbang</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+{% else %}
+<div class="card">
+    <div class="card-body text-center py-5">
+        <i class="bi bi-book fs-1 text-muted mb-3"></i>
+        <h5 class="text-muted">Belum Ada Data Buku Besar</h5>
+        <p class="text-muted">Buku besar akan muncul setelah Anda menambahkan transaksi.</p>
+        <a href="/input/" class="btn btn-primary">
+            <i class="bi bi-plus-circle me-2"></i>Tambah Transaksi Pertama
+        </a>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Dark mode styling for Buku Besar */
+    [data-theme="dark"] h1,
+    [data-theme="dark"] h2,
+    [data-theme="dark"] h3,
+    [data-theme="dark"] h4,
+    [data-theme="dark"] h5,
+    [data-theme="dark"] h6 {
+        color: var(--text-color) !important;
+    }
+    
+    [data-theme="dark"] .text-primary {
+        color: var(--primary-color) !important;
+    }
+    
+    [data-theme="dark"] .text-muted {
+        color: var(--muted-text) !important;
+    }
+    
+    [data-theme="dark"] .page-title {
+        color: var(--text-color) !important;
+    }
+    
+    [data-theme="dark"] .page-subtitle {
+        color: var(--muted-text) !important;
+    }
+    
+    /* Button styling */
+    [data-theme="dark"] .btn-outline-danger {
+        color: #ef4444 !important;
+        border-color: #ef4444 !important;
+    }
+    
+    [data-theme="dark"] .btn-outline-danger:hover {
+        background-color: #ef4444 !important;
+        color: #ffffff !important;
+    }
+    
+    [data-theme="dark"] .btn-outline-success {
+        color: #10b981 !important;
+        border-color: #10b981 !important;
+    }
+    
+    [data-theme="dark"] .btn-outline-success:hover {
+        background-color: #10b981 !important;
+        color: #ffffff !important;
+    }
+    
+    [data-theme="dark"] .btn-outline-info {
+        color: #06b6d4 !important;
+        border-color: #06b6d4 !important;
+    }
+    
+    [data-theme="dark"] .btn-outline-info:hover {
+        background-color: #06b6d4 !important;
+        color: #ffffff !important;
+    }
+    
+    [data-theme="dark"] .btn-outline-primary {
+        color: var(--primary-color) !important;
+        border-color: var(--primary-color) !important;
+    }
+    
+    [data-theme="dark"] .btn-outline-primary:hover {
+        background-color: var(--primary-color) !important;
+        color: #ffffff !important;
+    }
+    
+    /* Card styling */
+    [data-theme="dark"] .card-header {
+        background-color: var(--card-bg) !important;
+        border-bottom-color: var(--border-color) !important;
+    }
+    
+    [data-theme="dark"] .card-header .card-title {
+        color: var(--text-color) !important;
+        font-weight: 600;
+    }
+    
+    /* Form styling */
+    [data-theme="dark"] .form-label {
+        color: var(--text-color) !important;
+        font-weight: 500;
+    }
+    
+    /* Table styling */
+    [data-theme="dark"] .table-primary th {
+        background-color: var(--primary-color) !important;
+        color: #ffffff !important;
+        border-color: var(--border-color) !important;
+    }
+    
+    [data-theme="dark"] .table-light {
+        background-color: var(--bg-color) !important;
+    }
+    
+    [data-theme="dark"] .table-hover tbody tr:hover {
+        background-color: var(--card-bg) !important;
+        color: var(--text-color) !important;
+    }
+    
+    [data-theme="dark"] .table tbody td {
+        color: var(--accent-text) !important;
+        border-color: var(--border-color) !important;
+    }
+    
+    [data-theme="dark"] .table tbody td strong {
+        color: var(--text-color) !important;
+    }
+    
+    [data-theme="dark"] .table-dark th {
+        background-color: var(--bg-color) !important;
+        color: var(--text-color) !important;
+        border-color: var(--border-color) !important;
+    }
+    
+    /* Badge styling */
+    [data-theme="dark"] .badge.bg-secondary {
+        background-color: var(--card-bg) !important;
+        color: var(--text-color) !important;
+        border: 1px solid var(--border-color) !important;
+    }
+    
+    [data-theme="dark"] .badge.bg-success {
+        background-color: #10b981 !important;
+        color: #ffffff !important;
+    }
+    
+    [data-theme="dark"] .badge.bg-danger {
+        background-color: #ef4444 !important;
+        color: #ffffff !important;
+    }
+    
+    [data-theme="dark"] .badge.bg-warning {
+        background-color: #f59e0b !important;
+        color: #ffffff !important;
+    }
+    
+    [data-theme="dark"] .badge.bg-info {
+        background-color: #06b6d4 !important;
+        color: #ffffff !important;
+    }
+    
+    [data-theme="dark"] .badge.bg-primary {
+        background-color: var(--primary-color) !important;
+        color: #ffffff !important;
+    }
+    
+    /* Text color adjustments */
+    [data-theme="dark"] .text-success {
+        color: #34d399 !important;
+    }
+    
+    [data-theme="dark"] .text-danger {
+        color: #f87171 !important;
+    }
+    
+    [data-theme="dark"] .fw-semibold {
+        color: var(--text-color) !important;
+    }
+    
+    /* Summary styling */
+    [data-theme="dark"] .bg-light.border {
+        background-color: var(--card-bg) !important;
+        border-color: var(--border-color) !important;
+    }
+    
+    [data-theme="dark"] .bg-light.border .text-muted {
+        color: var(--muted-text) !important;
+    }
+    
+    [data-theme="dark"] .bg-light.border .fw-bold {
+        color: var(--text-color) !important;
+    }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Set default date range to current month
+    const startDateInput = document.querySelector('input[name="start_date"]');
+    const endDateInput = document.querySelector('input[name="end_date"]');
+    
+    if (!startDateInput.value && !endDateInput.value) {
+        const now = new Date();
+        const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
+        const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+        
+        startDateInput.value = firstDay.toISOString().split('T')[0];
+        endDateInput.value = lastDay.toISOString().split('T')[0];
+    }
+});
+
+function exportAccountToExcel(accountName, accountCode) {
+    const tableId = 'table-' + accountCode.replace(/[^a-zA-Z0-9]/g, '');
+    const table = document.querySelector(`[id*="${accountCode.replace(/[^a-zA-Z0-9]/g, '')}"]`) || 
+                  document.querySelector(`table`);
+    
+    if (!table) return;
+    
+    let csv = [];
+    const rows = table.querySelectorAll('tr');
+    
+    // Add header with account info
+    csv.push(`Buku Besar - ${accountName} (${accountCode})`);
+    csv.push('');
+    
+    for (let i = 0; i < rows.length; i++) {
+        const row = [];
+        const cols = rows[i].querySelectorAll('td, th');
+        
+        for (let j = 0; j < cols.length; j++) {
+            row.push(cols[j].innerText.replace(/,/g, ';'));
+        }
+        csv.push(row.join(','));
+    }
+    
+    const csvFile = new Blob([csv.join('\n')], { type: 'text/csv' });
+    const downloadLink = document.createElement('a');
+    downloadLink.download = `buku_besar_${accountCode}.csv`;
+    downloadLink.href = window.URL.createObjectURL(csvFile);
+    downloadLink.style.display = 'none';
+    document.body.appendChild(downloadLink);
+    downloadLink.click();
+    document.body.removeChild(downloadLink);
+}
+
+// Collapsible account sections
+document.querySelectorAll('.card-header').forEach(header => {
+    header.style.cursor = 'pointer';
+    header.addEventListener('click', function(e) {
+        if (e.target.tagName === 'BUTTON' || e.target.closest('button')) return;
+        
+        const cardBody = this.nextElementSibling;
+        if (cardBody.style.display === 'none') {
+            cardBody.style.display = 'block';
+            this.querySelector('h5').innerHTML = this.querySelector('h5').innerHTML.replace('▶', '▼');
+        } else {
+            cardBody.style.display = 'none';
+            this.querySelector('h5').innerHTML = this.querySelector('h5').innerHTML.replace('▼', '▶');
+        }
+    });
+});
+</script>
+{% endblock %}
