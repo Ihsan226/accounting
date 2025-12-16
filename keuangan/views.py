@@ -1,3 +1,4 @@
+# Jurnal Umum Excel export (placed after imports to avoid NameError)
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
@@ -170,8 +171,26 @@ def input_transaksi(request):
 # --- Jurnal Umum View ---
 @login_required
 def jurnal_umum(request):
-    # Filter Jurnal berdasarkan user yang login (lebih sederhana)
-    jurnal = Jurnal.objects.select_related('transaksi', 'akun').filter(akun__user=request.user).order_by('-transaksi__tanggal', '-transaksi__id')
+    # Base queryset: hanya milik user
+    jurnal = Jurnal.objects.select_related('transaksi', 'akun').filter(akun__user=request.user)
+
+    # Apply filters from query params
+    start_date = request.GET.get('start_date')
+    end_date = request.GET.get('end_date')
+    search = request.GET.get('search')
+
+    if start_date:
+        sd = parse_date_flexible(start_date)
+        if sd:
+            jurnal = jurnal.filter(transaksi__tanggal__gte=sd)
+    if end_date:
+        ed = parse_date_flexible(end_date)
+        if ed:
+            jurnal = jurnal.filter(transaksi__tanggal__lte=ed)
+    if search:
+        jurnal = jurnal.filter(transaksi__deskripsi__icontains=search)
+
+    jurnal = jurnal.order_by('transaksi__tanggal', 'transaksi__id')
     
     # Agregasi untuk total (lebih efisien)
     totals = jurnal.aggregate(
@@ -197,13 +216,128 @@ def jurnal_umum(request):
 @login_required
 def jurnal_umum_pdf(request):
     """Export Jurnal Umum to PDF - Only user's data"""
-    # Filter jurnal hanya untuk akun milik user yang login (diperbaiki)
-    jurnal = Jurnal.objects.select_related('transaksi', 'akun').filter(akun__user=request.user).order_by('-transaksi__tanggal', '-transaksi__id')
+    # Base queryset: hanya milik user
+    jurnal = Jurnal.objects.select_related('transaksi', 'akun').filter(akun__user=request.user)
+    # Apply same filters as HTML
+    start_date = request.GET.get('start_date')
+    end_date = request.GET.get('end_date')
+    search = request.GET.get('search')
+    if start_date:
+        sd = parse_date_flexible(start_date)
+        if sd:
+            jurnal = jurnal.filter(transaksi__tanggal__gte=sd)
+    if end_date:
+        ed = parse_date_flexible(end_date)
+        if ed:
+            jurnal = jurnal.filter(transaksi__tanggal__lte=ed)
+    if search:
+        jurnal = jurnal.filter(transaksi__deskripsi__icontains=search)
+
+    jurnal = jurnal.order_by('transaksi__tanggal', 'transaksi__id')
     
     buffer = export_jurnal_pdf(jurnal)
     response = create_pdf_response('jurnal_umum.pdf')
     response.write(buffer.getvalue())
     
+    return response
+
+@login_required
+def jurnal_umum_excel(request):
+    from openpyxl import Workbook
+    from openpyxl.styles import Font, Alignment, PatternFill, Border, Side
+    from openpyxl.utils import get_column_letter
+    from io import BytesIO
+
+    jurnal_qs = Jurnal.objects.select_related('transaksi', 'akun').filter(akun__user=request.user)
+    # Apply same filters
+    start_date = request.GET.get('start_date')
+    end_date = request.GET.get('end_date')
+    search = request.GET.get('search')
+    if start_date:
+        sd = parse_date_flexible(start_date)
+        if sd:
+            jurnal_qs = jurnal_qs.filter(transaksi__tanggal__gte=sd)
+    if end_date:
+        ed = parse_date_flexible(end_date)
+        if ed:
+            jurnal_qs = jurnal_qs.filter(transaksi__tanggal__lte=ed)
+    if search:
+        jurnal_qs = jurnal_qs.filter(transaksi__deskripsi__icontains=search)
+
+    jurnal_qs = jurnal_qs.order_by('transaksi__tanggal', 'transaksi__id')
+    transaksi_ids = jurnal_qs.values_list('transaksi__id', flat=True).distinct()
+    transaksi_qs = Transaksi.objects.filter(id__in=transaksi_ids).order_by('-tanggal', '-id')
+
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Jurnal Umum"
+
+    headers = ["Tanggal", "No. Ref", "Deskripsi", "Akun", "Debet (Rp)", "Kredit (Rp)"]
+    ws.append(headers)
+    header_font = Font(bold=True, color="FFFFFF")
+    header_fill = PatternFill("solid", fgColor="2563eb")
+    center = Alignment(horizontal="center", vertical="center")
+    thin = Side(style="thin", color="D9D9D9")
+    border = Border(left=thin, right=thin, top=thin, bottom=thin)
+
+    for col_idx in range(1, len(headers) + 1):
+        cell = ws.cell(row=1, column=col_idx)
+        cell.font = header_font
+        cell.fill = header_fill
+        cell.alignment = center
+        cell.border = border
+
+    total_debet = 0
+    total_kredit = 0
+    row_num = 2
+    for t in transaksi_qs:
+        jurnal_entries = jurnal_qs.filter(transaksi=t)
+        first = True
+        for j in jurnal_entries:
+            ws.append([
+                t.tanggal.strftime('%d/%m/%Y') if first else '',
+                f"AUTO-{t.id}" if first else '',
+                t.deskripsi if first else '',
+                f"{j.akun.kode} - {j.akun.nama}",
+                j.debit if j.debit > 0 else '',
+                j.kredit if j.kredit > 0 else '',
+            ])
+            for col_idx in range(1, len(headers) + 1):
+                cell = ws.cell(row=row_num, column=col_idx)
+                cell.alignment = Alignment(horizontal="left" if col_idx in [3,4] else "center", vertical="center")
+                cell.border = border
+                if col_idx in [5,6]:
+                    cell.number_format = '#,##0'
+            row_num += 1
+            first = False
+            total_debet += j.debit
+            total_kredit += j.kredit
+        ws.append([''] * len(headers))
+        row_num += 1
+
+    ws.append(['', '', '', 'TOTAL:', total_debet, total_kredit])
+    for col_idx in range(1, len(headers) + 1):
+        cell = ws.cell(row=row_num, column=col_idx)
+        cell.font = Font(bold=True)
+        cell.alignment = center if col_idx < 5 else Alignment(horizontal="right", vertical="center")
+        cell.border = border
+        if col_idx in [5,6]:
+            cell.number_format = '#,##0'
+
+    col_widths = [13, 12, 32, 28, 15, 15]
+    for i, width in enumerate(col_widths, start=1):
+        ws.column_dimensions[get_column_letter(i)].width = width
+
+    ws.freeze_panes = "A2"
+
+    buffer = BytesIO()
+    wb.save(buffer)
+    buffer.seek(0)
+    response = HttpResponse(
+        buffer.getvalue(),
+        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    )
+    response['Content-Disposition'] = 'attachment; filename="jurnal_umum.xlsx"'
     return response
 
 # --- Buku Besar View ---
@@ -423,54 +557,135 @@ def daftar_akun(request):
 # Ekspor PDF Daftar Akun
 @login_required
 def daftar_akun_pdf(request):
-    from reportlab.lib.pagesizes import A4
-    from reportlab.pdfgen import canvas
+    # Gunakan Platypus Table untuk tampilan seperti Excel: header, border, alignment, spacing
     from io import BytesIO
+    from reportlab.lib.pagesizes import A4
+    from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
+    from reportlab.lib import colors
+    from reportlab.lib.styles import getSampleStyleSheet
+
     akun_list = Akun.objects.filter(user=request.user).order_by('kode')
     buffer = BytesIO()
-    p = canvas.Canvas(buffer, pagesize=A4)
-    width, height = A4
-    y = height - 50
-    p.setFont("Helvetica-Bold", 14)
-    p.drawString(50, y, "Daftar Akun Pengguna") # Lebih aman tanpa username untuk PDF umum
-    y -= 30
-    p.setFont("Helvetica", 10)
-    p.drawString(50, y, "Kode")
-    p.drawString(120, y, "Nama")
-    p.drawString(350, y, "Tipe")
-    y -= 20
+    doc = SimpleDocTemplate(buffer, pagesize=A4, leftMargin=36, rightMargin=36, topMargin=48, bottomMargin=36)
+
+    styles = getSampleStyleSheet()
+    title = Paragraph("Daftar Akun Pengguna", styles['Title'])
+    elements = [title, Spacer(1, 12)]
+
+    # Data tabel
+    data = [["Kode", "Nama", "Tipe"]]
     for akun in akun_list:
-        p.drawString(50, y, str(akun.kode))
-        p.drawString(120, y, akun.nama)
-        p.drawString(350, y, akun.tipe)
-        y -= 18
-        if y < 50:
-            p.showPage()
-            y = height - 50
-    p.save()
+        data.append([str(akun.kode), akun.nama, akun.tipe])
+
+    # Tentukan lebar kolom agar proporsional
+    # A4 width ~ 595 pt; margins 36+36 => usable ~523 pt. Bagi 3 kolom.
+    col_widths = [100, 280, 143]
+
+    table = Table(data, colWidths=col_widths, hAlign='LEFT')
+    table.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#4F81BD')),
+        ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
+        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+        ('FONTSIZE', (0, 0), (-1, 0), 11),
+        ('ALIGN', (0, 0), (-1, 0), 'CENTER'),
+        ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+        ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.HexColor('#F7F7F7'), colors.white]),
+        ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#D9D9D9')),
+        ('LEFTPADDING', (0, 1), (-1, -1), 6),
+        ('RIGHTPADDING', (0, 1), (-1, -1), 6),
+        ('TOPPADDING', (0, 0), (-1, -1), 6),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 6),
+    ]))
+
+    elements.append(table)
+    doc.build(elements)
+
     buffer.seek(0)
-    response = HttpResponse(buffer, content_type='application/pdf')
+    response = HttpResponse(buffer.getvalue(), content_type='application/pdf')
     response['Content-Disposition'] = 'attachment; filename="daftar_akun.pdf"'
     return response
 
 # Ekspor Excel Daftar Akun
 @login_required
 def daftar_akun_excel(request):
-    from openpyxl import Workbook
-    from io import BytesIO
+    # Coba hasilkan file XLSX yang rapi; fallback ke CSV jika openpyxl tidak tersedia.
     akun_list = Akun.objects.filter(user=request.user).order_by('kode')
-    wb = Workbook()
-    ws = wb.active
-    ws.title = "Daftar Akun"
-    ws.append(["Kode", "Nama", "Tipe"])
-    for akun in akun_list:
-        ws.append([akun.kode, akun.nama, akun.tipe])
-    buffer = BytesIO()
-    wb.save(buffer)
-    buffer.seek(0)
-    response = HttpResponse(buffer.getvalue(), content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
-    response['Content-Disposition'] = 'attachment; filename="daftar_akun.xlsx"'
-    return response
+    try:
+        from openpyxl import Workbook
+        from openpyxl.styles import Font, Alignment, PatternFill, Border, Side
+        from openpyxl.utils import get_column_letter
+        from io import BytesIO
+
+        wb = Workbook()
+        ws = wb.active
+        ws.title = "Daftar Akun"
+
+        # Header styling
+        headers = ["Kode", "Nama", "Tipe"]
+        ws.append(headers)
+        header_font = Font(bold=True, color="FFFFFF")
+        header_fill = PatternFill("solid", fgColor="4F81BD")  # biru ala Office
+        center = Alignment(horizontal="center", vertical="center")
+        thin = Side(style="thin", color="D9D9D9")
+        border = Border(left=thin, right=thin, top=thin, bottom=thin)
+
+        for col_idx in range(1, len(headers) + 1):
+            cell = ws.cell(row=1, column=col_idx)
+            cell.font = header_font
+            cell.fill = header_fill
+            cell.alignment = center
+            cell.border = border
+
+        # Data rows
+        for akun in akun_list:
+            ws.append([akun.kode, akun.nama, akun.tipe])
+
+        # Apply border and alignment to data range
+        max_row = ws.max_row
+        max_col = ws.max_column
+        left_align = Alignment(horizontal="left", vertical="center")
+        for r in range(2, max_row + 1):
+            for c in range(1, max_col + 1):
+                cell = ws.cell(row=r, column=c)
+                cell.alignment = left_align
+                cell.border = border
+
+        # Column widths (auto-fit approximations)
+        col_widths = {}
+        for row in ws.iter_rows(values_only=True):
+            for i, value in enumerate(row, start=1):
+                val_str = str(value) if value is not None else ""
+                col_widths[i] = max(col_widths.get(i, 0), len(val_str))
+        for i, width in col_widths.items():
+            # Add padding and cap width for readability
+            ws.column_dimensions[get_column_letter(i)].width = min(width + 4, 40)
+
+        # Freeze header row
+        ws.freeze_panes = "A2"
+
+        # Save to response
+        buffer = BytesIO()
+        wb.save(buffer)
+        buffer.seek(0)
+        response = HttpResponse(
+            buffer.getvalue(),
+            content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        )
+        response['Content-Disposition'] = 'attachment; filename="daftar_akun.xlsx"'
+        return response
+    except Exception:
+        # Fallback CSV sederhana jika openpyxl tidak dapat diimport/dipakai.
+        import csv
+        from io import StringIO
+        buffer = StringIO()
+        writer = csv.writer(buffer)
+        writer.writerow(["Kode", "Nama", "Tipe"]) 
+        for akun in akun_list:
+            writer.writerow([akun.kode, akun.nama, akun.tipe])
+        csv_data = buffer.getvalue()
+        response = HttpResponse(csv_data, content_type='text/csv')
+        response['Content-Disposition'] = 'attachment; filename="daftar_akun.csv"'
+        return response
 
 @login_required
 def tambah_akun(request):
@@ -550,12 +765,36 @@ def transaksi_api_list(request):
     if request.method != 'GET':
         return HttpResponseBadRequest('Method not allowed')
 
-    # Filter Jurnal entries milik user
-    jurnal_qs = Jurnal.objects.select_related('transaksi', 'akun').filter(akun__user=request.user).order_by('-transaksi__tanggal', '-transaksi__id')
+    # Base queryset: Jurnal milik user
+    jurnal_qs = Jurnal.objects.select_related('transaksi', 'akun').filter(akun__user=request.user)
+
+    # Optional filters
+    q = (request.GET.get('q') or request.GET.get('search') or '').strip()
+    start_date = request.GET.get('start_date')
+    end_date = request.GET.get('end_date')
+    akun_id = request.GET.get('akun')
+
+    if q:
+        jurnal_qs = jurnal_qs.filter(transaksi__deskripsi__icontains=q)
+    if start_date:
+        sd = parse_date_flexible(start_date)
+        if sd:
+            jurnal_qs = jurnal_qs.filter(transaksi__tanggal__gte=sd)
+    if end_date:
+        ed = parse_date_flexible(end_date)
+        if ed:
+            jurnal_qs = jurnal_qs.filter(transaksi__tanggal__lte=ed)
+    if akun_id:
+        try:
+            jurnal_qs = jurnal_qs.filter(akun_id=int(akun_id))
+        except Exception:
+            pass
+
+    jurnal_qs = jurnal_qs.order_by('-transaksi__tanggal', '-transaksi__id')
     
     # Ambil ID transaksi unik
     transaksi_ids = jurnal_qs.values_list('transaksi__id', flat=True).distinct()
-    transaksi_qs = Transaksi.objects.filter(id__in=transaksi_ids).order_by('-tanggal', '-id')
+    transaksi_qs = Transaksi.objects.filter(id__in=transaksi_ids).order_by('tanggal', 'id')
 
     data = []
     for t in transaksi_qs:

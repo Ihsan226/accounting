@@ -3,17 +3,12 @@
 {% block title %}Buku Besar - Akuntansi{% endblock %}
 
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <div>
-        <h1 class="page-title">Buku Besar</h1>
-        <p class="page-subtitle">Ringkasan transaksi per akun</p>
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="page-title">Buku Besar</h1>
+            <p class="page-subtitle">Ringkasan transaksi per akun</p>
+        </div>
     </div>
-    <div>
-        <a href="/input/" class="btn btn-primary btn-action">
-            <i class="bi bi-plus-circle me-2"></i>Tambah Transaksi
-        </a>
-    </div>
-</div>
 
 <!-- Filter Section -->
 <div class="card mb-4">
@@ -58,12 +53,12 @@
                 <i class="bi bi-download me-2"></i>Export Buku Besar
             </h6>
             <div class="d-flex gap-2">
-                <a href="{% url 'buku_besar_pdf' %}{% if request.GET.akun_id %}?akun_id={{ request.GET.akun_id }}{% endif %}" class="btn btn-outline-danger btn-sm" target="_blank">
+                <a href="{% url 'buku_besar_pdf' %}{% if request.GET.akun_id or request.GET.start_date or request.GET.end_date %}?{% if request.GET.akun_id %}akun_id={{ request.GET.akun_id }}{% endif %}{% if request.GET.start_date %}{% if request.GET.akun_id %}&{% endif %}start_date={{ request.GET.start_date }}{% endif %}{% if request.GET.end_date %}{% if request.GET.akun_id or request.GET.start_date %}&{% endif %}end_date={{ request.GET.end_date }}{% endif %}{% endif %}" class="btn btn-outline-danger btn-sm" target="_blank">
                     <i class="bi bi-file-earmark-pdf me-2"></i>Export PDF
                 </a>
-                <button class="btn btn-outline-success btn-sm" onclick="exportAllToExcel()">
+                <a href="{% url 'buku_besar_excel' %}{% if request.GET.akun_id or request.GET.start_date or request.GET.end_date %}?{% if request.GET.akun_id %}akun_id={{ request.GET.akun_id }}{% endif %}{% if request.GET.start_date %}{% if request.GET.akun_id %}&{% endif %}start_date={{ request.GET.start_date }}{% endif %}{% if request.GET.end_date %}{% if request.GET.akun_id or request.GET.start_date %}&{% endif %}end_date={{ request.GET.end_date }}{% endif %}{% endif %}" class="btn btn-outline-success btn-sm" target="_blank">
                     <i class="bi bi-file-earmark-excel me-2"></i>Export Excel
-                </button>
+                </a>
                 <button class="btn btn-outline-info btn-sm" onclick="printReport()">
                     <i class="bi bi-printer me-2"></i>Print
                 </button>
@@ -85,12 +80,12 @@
             </div>
             <div class="d-flex gap-2">
                 <span class="badge bg-primary">{{ item.akun.jenis }}</span>
-                <a href="{% url 'buku_besar_pdf' %}?akun_id={{ item.akun.id }}" class="btn btn-sm btn-outline-danger" target="_blank">
+                <a href="{% url 'buku_besar_pdf' %}?akun_id={{ item.akun.id }}{% if request.GET.start_date %}&start_date={{ request.GET.start_date }}{% endif %}{% if request.GET.end_date %}&end_date={{ request.GET.end_date }}{% endif %}" class="btn btn-sm btn-outline-danger" target="_blank">
                     <i class="bi bi-file-earmark-pdf"></i>
                 </a>
-                <button class="btn btn-sm btn-outline-success" onclick="exportAccountToExcel('{{ item.akun.nama }}', '{{ item.akun.kode }}')">
+                <a href="{% url 'buku_besar_excel' %}?akun_id={{ item.akun.id }}{% if request.GET.start_date %}&start_date={{ request.GET.start_date }}{% endif %}{% if request.GET.end_date %}&end_date={{ request.GET.end_date }}{% endif %}" class="btn btn-sm btn-outline-success" target="_blank">
                     <i class="bi bi-file-earmark-excel"></i>
-                </button>
+                </a>
             </div>
         </div>
         <div class="card-body p-0">
@@ -413,6 +408,15 @@
     [data-theme="dark"] .bg-light.border .fw-bold {
         color: var(--text-color) !important;
     }
+
+    /* Print styles for clean output */
+    @media print {
+        .btn, .badge, .page-subtitle, .card .d-flex.gap-2 { display: none !important; }
+        .card, .card-header, .card-body { box-shadow: none !important; border: none !important; }
+        .table { font-size: 12px; }
+        .table thead th { background: #f0f0f0 !important; color: #000 !important; -webkit-print-color-adjust: exact; }
+        .container, .card-body { padding: 0 !important; }
+    }
 </style>
 {% endblock %}
 
@@ -432,6 +436,10 @@ document.addEventListener('DOMContentLoaded', function() {
         endDateInput.value = lastDay.toISOString().split('T')[0];
     }
 });
+
+function printReport() {
+    window.print();
+}
 
 function exportAccountToExcel(accountName, accountCode) {
     const tableId = 'table-' + accountCode.replace(/[^a-zA-Z0-9]/g, '');

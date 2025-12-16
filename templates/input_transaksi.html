@@ -179,6 +179,23 @@
             <h6 class="mb-0">Daftar Transaksi (Inline)</h6>
         </div>
         <div class="card-body">
+            <div class="row g-2 align-items-end mb-3 filter-toolbar">
+                <div class="col-md-4">
+                    <label class="form-label small text-muted">Cari Deskripsi</label>
+                    <input type="text" id="filterSearch" class="form-control" placeholder="Ketik untuk mencari...">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label small text-muted">Dari Tanggal</label>
+                    <input type="date" id="filterStart" class="form-control">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label small text-muted">Sampai Tanggal</label>
+                    <input type="date" id="filterEnd" class="form-control">
+                </div>
+                <div class="col-md-2 d-grid">
+                    <button id="filterReset" class="btn btn-outline-secondary"><i class="bi bi-x-circle me-1"></i>Bersihkan</button>
+                </div>
+            </div>
             <div class="table-responsive">
                 <table class="table table-hover" id="transaksiTable">
                     <thead>
@@ -227,6 +244,29 @@
 
 {% block extra_css %}
 <style>
+    /* Uniform sizing for filter toolbar */
+    .filter-toolbar .form-control {
+        height: 48px;
+        min-height: 48px;
+        padding: 10px 14px;
+        border-radius: 12px;
+    }
+    .filter-toolbar .btn {
+        height: 48px;
+        min-height: 48px;
+        border-radius: 12px;
+    }
+    /* Improve native date input alignment */
+    .filter-toolbar input[type="date"]::-webkit-datetime-edit {
+        padding: 0 2px;
+    }
+    .filter-toolbar input[type="date"]::-webkit-calendar-picker-indicator {
+        filter: opacity(0.6);
+        width: 20px;
+        height: 20px;
+        cursor: pointer;
+    }
+
     /* Dark mode styling for Input Transaksi */
     [data-theme="dark"] h1,
     [data-theme="dark"] h2,
@@ -385,6 +425,8 @@
         background-color: var(--primary-color) !important;
         color: #ffffff !important;
     }
+
+    /* Remove custom action button styles, use Bootstrap's outline-primary and outline-danger for consistency with Daftar Akun */
 </style>
 {% endblock %}
 
@@ -504,13 +546,47 @@ document.addEventListener('DOMContentLoaded', function() {
 
         async function loadTransactions() {
             try {
-                const res = await fetch(URL_LIST, { credentials: 'same-origin' });
+                const qs = buildQueryString();
+                const url = qs ? (URL_LIST + '?' + qs) : URL_LIST;
+                const res = await fetch(url, { credentials: 'same-origin' });
                 if (!res.ok) throw new Error('Failed to load');
                 const data = await res.json();
                 renderTransactions(data.results || []);
             } catch (err) {
                 console.error('Error loading transaksi:', err);
             }
+        }
+
+        function buildQueryString() {
+            const params = new URLSearchParams();
+            const q = document.getElementById('filterSearch')?.value?.trim();
+            const sd = document.getElementById('filterStart')?.value;
+            const ed = document.getElementById('filterEnd')?.value;
+            if (q) params.set('q', q);
+            if (sd) params.set('start_date', sd);
+            if (ed) params.set('end_date', ed);
+            return params.toString();
+        }
+
+        // Filter listeners
+        const fSearch = document.getElementById('filterSearch');
+        const fStart = document.getElementById('filterStart');
+        const fEnd = document.getElementById('filterEnd');
+        const fReset = document.getElementById('filterReset');
+        [fSearch, fStart, fEnd].forEach(el => {
+            if (el) el.addEventListener('input', debounce(loadTransactions, 250));
+            if (el && (el === fStart || el === fEnd)) el.addEventListener('change', loadTransactions);
+        });
+        if (fReset) fReset.addEventListener('click', function(e){
+            e.preventDefault();
+            if (fSearch) fSearch.value = '';
+            if (fStart) fStart.value = '';
+            if (fEnd) fEnd.value = '';
+            loadTransactions();
+        });
+
+        function debounce(fn, delay){
+            let t; return (...args)=>{ clearTimeout(t); t=setTimeout(()=>fn.apply(this,args), delay); };
         }
 
         function renderTransactions(items) {
@@ -538,8 +614,14 @@ document.addEventListener('DOMContentLoaded', function() {
                     <td>${akunKreditText}</td>
                     <td>${jumlahText}</td>
                     <td>
-                        <button class="btn btn-sm btn-outline-primary btn-edit" data-id="${item.id}">Edit</button>
-                        <button class="btn btn-sm btn-outline-danger btn-delete" data-id="${item.id}">Hapus</button>
+                        <div class="btn-group" role="group">
+                            <button class="btn btn-sm btn-outline-primary btn-edit" data-id="${item.id}" title="Edit">
+                                <i class="bi bi-pencil"></i>
+                            </button>
+                            <button class="btn btn-sm btn-outline-danger btn-delete" data-id="${item.id}" title="Hapus">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </div>
                     </td>
                 `;
                 tbody.appendChild(tr);

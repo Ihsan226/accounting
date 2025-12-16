@@ -259,7 +259,7 @@ def export_neraca_saldo_pdf(neraca_data):
     return buffer
 
 def export_laporan_keuangan_pdf(laporan_data):
-    """Export laporan keuangan to PDF"""
+    """Export laporan keuangan lengkap: Neraca, Laba Rugi, Arus Kas, Analisis"""
     buffer = io.BytesIO()
     doc = SimpleDocTemplate(buffer, pagesize=A4, topMargin=0.5*inch)
     story = []
@@ -269,6 +269,30 @@ def export_laporan_keuangan_pdf(laporan_data):
     
     styles = getSampleStyleSheet()
     
+    # Neraca (Balance Sheet)
+    story.append(Paragraph("NERACA", styles['Heading2']))
+    story.append(Spacer(1, 0.1*inch))
+    bs_left = [['Aktiva', 'Jumlah (Rp)']]
+    for item in laporan_data.get('aktiva', []):
+        bs_left.append([item['akun__nama'], f"{item['saldo']:,.2f}"])
+    bs_left.append(['Total Aktiva', f"{laporan_data.get('total_aktiva', 0):,.2f}"])
+
+    bs_right = [['Kewajiban & Modal', 'Jumlah (Rp)']]
+    for item in laporan_data.get('kewajiban', []):
+        bs_right.append([item['akun__nama'], f"{item['saldo']:,.2f}"])
+    for item in laporan_data.get('modal', []):
+        bs_right.append([item['akun__nama'], f"{item['saldo']:,.2f}"])
+    bs_right.append(['Total Kewajiban + Modal', f"{laporan_data.get('equation_right', 0):,.2f}"])
+
+    t_left = Table(bs_left, colWidths=[3.5*inch, 1.5*inch])
+    t_right = Table(bs_right, colWidths=[3.5*inch, 1.5*inch])
+    t_left.setStyle(create_table_style())
+    t_right.setStyle(create_table_style())
+    story.append(t_left)
+    story.append(Spacer(1, 0.1*inch))
+    story.append(t_right)
+    story.append(Spacer(1, 0.2*inch))
+
     # Laporan Laba Rugi
     story.append(Paragraph("LAPORAN LABA RUGI", styles['Heading2']))
     story.append(Spacer(1, 0.1*inch))
@@ -313,6 +337,36 @@ def export_laporan_keuangan_pdf(laporan_data):
         ('GRID', (0, 0), (-1, -1), 1, colors.black),
     ]))
     story.append(laba_rugi_table)
+    story.append(Spacer(1, 0.2*inch))
+
+    # Arus Kas (Cash Flow)
+    story.append(Paragraph("LAPORAN ARUS KAS", styles['Heading2']))
+    story.append(Spacer(1, 0.1*inch))
+    ak_operasional = [["Kas Masuk Operasional", f"{laporan_data.get('kas_masuk_operasional', 0):,.2f}"],
+                      ["Kas Keluar Operasional", f"{laporan_data.get('kas_keluar_operasional', 0):,.2f}"],
+                      ["Kas Bersih Operasional", f"{laporan_data.get('kas_bersih_operasional', 0):,.2f}"]]
+    ak_investasi = [["Kas Masuk Investasi", f"{laporan_data.get('kas_masuk_investasi', 0):,.2f}"],
+                    ["Kas Keluar Investasi", f"{laporan_data.get('kas_keluar_investasi', 0):,.2f}"],
+                    ["Kas Bersih Investasi", f"{laporan_data.get('kas_bersih_investasi', 0):,.2f}"]]
+    ak_pendanaan = [["Kas Masuk Pendanaan", f"{laporan_data.get('kas_masuk_pendanaan', 0):,.2f}"],
+                    ["Kas Keluar Pendanaan", f"{laporan_data.get('kas_keluar_pendanaan', 0):,.2f}"],
+                    ["Kas Bersih Pendanaan", f"{laporan_data.get('kas_bersih_pendanaan', 0):,.2f}"]]
+    ak_total = [["Total Kenaikan/ Penurunan Kas", f"{laporan_data.get('total_kas_bersih', 0):,.2f}"]]
+
+    for section in (ak_operasional, ak_investasi, ak_pendanaan, ak_total):
+        t = Table(section, colWidths=[4*inch, 2*inch])
+        t.setStyle(create_table_style())
+        story.append(t)
+        story.append(Spacer(1, 0.1*inch))
+
+    # Analisis (Ratios)
+    story.append(Paragraph("ANALISIS", styles['Heading2']))
+    story.append(Spacer(1, 0.1*inch))
+    analysis = [["Profit Margin (%)", f"{laporan_data.get('profit_margin', 0):,.2f}"],
+                ["Current Ratio", f"{laporan_data.get('current_ratio', 0) if laporan_data.get('current_ratio') is not None else '-'}"]]
+    t_analysis = Table(analysis, colWidths=[4*inch, 2*inch])
+    t_analysis.setStyle(create_table_style())
+    story.append(t_analysis)
     
     # Add footer
     footer_style = ParagraphStyle(

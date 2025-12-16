@@ -8,11 +8,7 @@
         <h1 class="page-title">Jurnal Umum</h1>
         <p class="page-subtitle">Catatan semua transaksi keuangan secara kronologis</p>
     </div>
-    <div>
-        <a href="/input/" class="btn btn-primary btn-action">
-            <i class="bi bi-plus-circle me-2"></i>Tambah Transaksi
-        </a>
-    </div>
+    
 </div>
 
 <!-- Filter Section -->
@@ -51,12 +47,12 @@
             Daftar Jurnal
         </h5>
         <div class="d-flex gap-2">
-            <a href="{% url 'jurnal_umum_pdf' %}" class="btn btn-sm btn-outline-danger" target="_blank">
+            <a href="{% url 'jurnal_umum_pdf' %}{% if request.GET.start_date or request.GET.end_date or request.GET.search %}?{% if request.GET.start_date %}start_date={{ request.GET.start_date }}{% endif %}{% if request.GET.end_date %}{% if request.GET.start_date %}&{% endif %}end_date={{ request.GET.end_date }}{% endif %}{% if request.GET.search %}{% if request.GET.start_date or request.GET.end_date %}&{% endif %}search={{ request.GET.search|urlencode }}{% endif %}{% endif %}" class="btn btn-sm btn-outline-danger" target="_blank">
                 <i class="bi bi-file-earmark-pdf me-1"></i>PDF
             </a>
-            <button class="btn btn-sm btn-outline-success" onclick="exportToExcel()">
+            <a href="{% url 'jurnal_umum_excel' %}{% if request.GET.start_date or request.GET.end_date or request.GET.search %}?{% if request.GET.start_date %}start_date={{ request.GET.start_date }}{% endif %}{% if request.GET.end_date %}{% if request.GET.start_date %}&{% endif %}end_date={{ request.GET.end_date }}{% endif %}{% if request.GET.search %}{% if request.GET.start_date or request.GET.end_date %}&{% endif %}search={{ request.GET.search|urlencode }}{% endif %}{% endif %}" class="btn btn-sm btn-outline-success" target="_blank">
                 <i class="bi bi-file-earmark-excel me-1"></i>Excel
-            </button>
+            </a>
             <button class="btn btn-sm btn-outline-info" onclick="printJournal()">
                 <i class="bi bi-printer me-1"></i>Print
             </button>
@@ -411,55 +407,80 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 
-function exportToExcel() {
-    // Simple CSV export functionality
-    const table = document.getElementById('journalTable');
-    let csv = [];
-    const rows = table.querySelectorAll('tr');
-    
-    for (let i = 0; i < rows.length; i++) {
-        const row = [];
-        const cols = rows[i].querySelectorAll('td, th');
-        
-        for (let j = 0; j < cols.length; j++) {
-            row.push(cols[j].innerText);
-        }
-        csv.push(row.join(','));
-    }
-    
-    const csvFile = new Blob([csv.join('\n')], { type: 'text/csv' });
-    const downloadLink = document.createElement('a');
-    downloadLink.download = 'jurnal_umum.csv';
-    downloadLink.href = window.URL.createObjectURL(csvFile);
-    downloadLink.style.display = 'none';
-    document.body.appendChild(downloadLink);
-    downloadLink.click();
-    document.body.removeChild(downloadLink);
-}
+
 
 function printJournal() {
     window.print();
 }
 
-// Print styles
-const printCSS = `
-    @media print {
-        .btn, .card-header .d-flex div:last-child, nav, .card-footer {
-            display: none !important;
-        }
-        .card {
-            border: none !important;
-            box-shadow: none !important;
-        }
-        .table th {
-            background-color: #f8f9fa !important;
-            color: #000 !important;
-        }
-    }
-`;
 
-const style = document.createElement('style');
-style.textContent = printCSS;
-document.head.appendChild(style);
+// Print styles: match PDF look (header, table, spacing, colors)
+const printCSS = `
+@media print {
+    body {
+        background: #fff !important;
+        color: #222 !important;
+    }
+    .btn, .card-header .d-flex div:last-child, nav, .card-footer, .page-title, .page-subtitle, .card .card-title i {
+        display: none !important;
+    }
+    .card {
+        border: none !important;
+        box-shadow: none !important;
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+    .card-header {
+        background: #2563eb !important;
+        color: #fff !important;
+        font-size: 1.2rem !important;
+        font-weight: bold !important;
+        border-bottom: 2px solid #2563eb !important;
+        padding: 16px 24px !important;
+    }
+    .table th {
+        background-color: #2563eb !important;
+        color: #fff !important;
+        font-weight: bold !important;
+        font-size: 1rem !important;
+        border: 1px solid #d9d9d9 !important;
+        padding: 8px 6px !important;
+    }
+    .table td {
+        border: 1px solid #d9d9d9 !important;
+        padding: 8px 6px !important;
+        font-size: 0.98rem !important;
+    }
+    .table tfoot th, .table tfoot td {
+        background: #f7f7f7 !important;
+        font-weight: bold !important;
+        color: #2563eb !important;
+        border-top: 2px solid #2563eb !important;
+    }
+    .fw-semibold {
+        font-weight: bold !important;
+        color: #222 !important;
+    }
+    .text-success {
+        color: #10b981 !important;
+    }
+    .text-danger {
+        color: #ef4444 !important;
+    }
+    .badge {
+        background: #e5e7eb !important;
+        color: #222 !important;
+        font-size: 0.95rem !important;
+        border-radius: 6px !important;
+        padding: 2px 8px !important;
+    }
+}
+`;
+if (!document.getElementById('print-style-jurnal')) {
+    const style = document.createElement('style');
+    style.id = 'print-style-jurnal';
+    style.textContent = printCSS;
+    document.head.appendChild(style);
+}
 </script>
 {% endblock %}
