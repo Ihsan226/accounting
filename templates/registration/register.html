@@ -3,220 +3,490 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Registrasi - Sistem Akuntansi</title>
+    <title>Registrasi - FYNCA</title>
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Bootstrap Icons -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
-        :root {
-            --primary-color: #3b82f6;
-            --secondary-color: #64748b;
-            --success-color: #22c55e;
-            --danger-color: #ef4444;
-            --warning-color: #f59e0b;
-            --info-color: #06b6d4;
-            --light-color: #f8fafc;
-            --dark-color: #1e293b;
-            --border-color: #e2e8f0;
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
         }
         
         body {
-            background: linear-gradient(135deg, var(--success-color) 0%, var(--primary-color) 100%);
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            overflow-x: hidden;
         }
         
-        .register-container {
+        .register-wrapper {
             min-height: 100vh;
             display: flex;
             align-items: center;
             justify-content: center;
-            padding: 20px 0;
+            padding: 20px;
         }
         
-        .register-card {
+        .register-container {
+            display: flex;
             background: white;
-            border-radius: 20px;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1);
-            overflow: hidden;
-            max-width: 500px;
+            border-radius: 24px;
+            box-shadow: 0 30px 90px rgba(0, 0, 0, 0.2);
+            max-width: 1200px;
             width: 100%;
+            overflow: hidden;
+            max-height: calc(100vh - 40px);
+            animation: slideUp 0.6s ease-out;
         }
         
-        .register-header {
-            background: linear-gradient(135deg, var(--success-color), var(--primary-color));
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .register-form-section {
+            flex: 1.2;
+            padding: 38px 50px;
+            background: white;
+            overflow-y: auto;
+            min-height: 0;
+        }
+
+        .register-form-inner {
+            max-width: 520px;
+            width: 100%;
+            margin: 0 auto;
+        }
+        
+        .register-form-section::-webkit-scrollbar {
+            width: 6px;
+        }
+        
+        .register-form-section::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+        
+        .register-form-section::-webkit-scrollbar-thumb {
+            background: #667eea;
+            border-radius: 3px;
+        }
+        
+        .register-visual-section {
+            flex: 1;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 60px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .visual-content {
+            text-align: center;
             color: white;
-            padding: 2rem;
+            z-index: 2;
+        }
+        
+        .visual-icon {
+            font-size: 120px;
+            margin-bottom: 30px;
+            animation: float 3s ease-in-out infinite;
+        }
+        
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-20px); }
+        }
+        
+        .visual-title {
+            font-size: 32px;
+            font-weight: 700;
+            margin-bottom: 16px;
+            text-shadow: 0 2px 20px rgba(0, 0, 0, 0.2);
+        }
+        
+        .visual-subtitle {
+            font-size: 16px;
+            opacity: 0.9;
+            line-height: 1.6;
+        }
+        
+        .decorative-circle {
+            position: absolute;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.1);
+        }
+        
+        .circle-1 {
+            width: 400px;
+            height: 400px;
+            top: -200px;
+            right: -200px;
+        }
+        
+        .circle-2 {
+            width: 300px;
+            height: 300px;
+            bottom: -150px;
+            left: -150px;
+        }
+        
+        .logo-section {
+            margin-bottom: 28px;
             text-align: center;
         }
         
-        .register-body {
-            padding: 2rem;
+        .logo-icon {
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 14px auto;
+        }
+        
+        .logo-icon i {
+            font-size: 32px;
+            color: white;
+        }
+        
+        .form-title {
+            font-size: 32px;
+            font-weight: 700;
+            color: #1a202c;
+            margin-bottom: 8px;
+        }
+        
+        .form-subtitle {
+            font-size: 16px;
+            color: #718096;
+            margin-bottom: 26px;
+        }
+        
+        .field-group {
+            margin-bottom: 18px;
+        }
+        
+        .input-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            margin-bottom: 20px;
+        }
+        
+        .input-label {
+            display: block;
+            font-size: 14px;
+            font-weight: 600;
+            color: #4a5568;
+            margin-bottom: 8px;
+        }
+        
+        .input-wrapper {
+            position: relative;
+        }
+        
+        .input-icon {
+            position: absolute;
+            left: 16px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #a0aec0;
+            font-size: 18px;
+            pointer-events: none;
         }
         
         .form-control {
-            border-radius: 10px;
-            padding: 12px 16px;
-            border: 2px solid var(--border-color);
+            width: 100%;
+            padding: 14px 16px 14px 48px;
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            font-size: 15px;
             transition: all 0.3s ease;
+            background: #f7fafc;
         }
         
         .form-control:focus {
-            border-color: var(--primary-color);
-            box-shadow: 0 0 0 0.2rem rgba(59, 130, 246, 0.25);
+            outline: none;
+            border-color: #667eea;
+            background: white;
+            box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
         }
         
-        .btn-register {
-            background: var(--success-color);
-            border: none;
-            border-radius: 10px;
-            padding: 12px 24px;
-            font-weight: 600;
-            transition: all 0.3s ease;
+        .form-control.is-invalid {
+            border-color: #fc8181;
         }
         
-        .btn-register:hover {
-            background: #16a34a;
-            transform: translateY(-1px);
+        .invalid-feedback {
+            color: #fc8181;
+            font-size: 13px;
+            margin-top: 6px;
+            display: block;
         }
         
-        .btn-login-link {
-            background: var(--primary-color);
-            border: none;
-            border-radius: 10px;
-            padding: 12px 24px;
-            font-weight: 600;
-            transition: all 0.3s ease;
-        }
-        
-        .btn-login-link:hover {
-            background: #2563eb;
-            transform: translateY(-1px);
-        }
-        
-        .form-floating label {
-            color: var(--secondary-color);
-        }
-        
-        .alert {
-            border-radius: 10px;
-            border: none;
+        .form-text {
+            font-size: 13px;
+            color: #a0aec0;
+            margin-top: 6px;
         }
         
         .password-requirements {
-            font-size: 0.85rem;
-            color: var(--secondary-color);
-            margin-top: 0.5rem;
+            background: #f7fafc;
+            border-radius: 8px;
+            padding: 12px;
+            margin-top: 8px;
+            font-size: 13px;
+            color: #4a5568;
         }
         
         .password-requirements ul {
-            margin: 0.5rem 0 0 1rem;
-            padding: 0;
+            margin: 8px 0 0 0;
+            padding-left: 20px;
         }
         
         .password-requirements li {
-            margin-bottom: 0.25rem;
+            margin-bottom: 4px;
+        }
+        
+        .btn-register {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 8px;
+        }
+        
+        .btn-register:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 24px rgba(102, 126, 234, 0.3);
+        }
+        
+        .btn-register:active {
+            transform: translateY(0);
+        }
+        
+        .divider {
+            display: flex;
+            align-items: center;
+            text-align: center;
+            margin: 24px 0;
+        }
+        
+        .divider::before,
+        .divider::after {
+            content: '';
+            flex: 1;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        
+        .divider span {
+            padding: 0 16px;
+            color: #a0aec0;
+            font-size: 14px;
+        }
+        
+        .login-link {
+            text-align: center;
+            font-size: 15px;
+            color: #4a5568;
+        }
+        
+        .login-link a {
+            color: #667eea;
+            font-weight: 600;
+            text-decoration: none;
+            transition: color 0.3s ease;
+        }
+        
+        .login-link a:hover {
+            color: #764ba2;
+        }
+        
+        .alert {
+            padding: 14px 16px;
+            border-radius: 12px;
+            margin-bottom: 18px;
+            border: none;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .alert-danger {
+            background: #fed7d7;
+            color: #9b2c2c;
+        }
+        
+        .alert-success {
+            background: #c6f6d5;
+            color: #276749;
+        }
+        
+        @media (max-width: 992px) {
+            .register-visual-section {
+                display: none;
+            }
+            
+            .register-form-section {
+                padding: 32px 30px;
+            }
+            
+            .input-row {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        @media (max-width: 576px) {
+            .register-form-section {
+                padding: 32px 20px;
+            }
+            
+            .form-title {
+                font-size: 28px;
+            }
         }
     </style>
 </head>
 <body>
-    <div class="register-container">
-        <div class="register-card">
-            <div class="register-header">
-                <i class="bi bi-person-plus fs-1 mb-3"></i>
-                <h2 class="mb-0">Daftar Akun Baru</h2>
-                <p class="mb-0 opacity-75">Buat akun untuk mengakses sistem akuntansi</p>
-            </div>
-            
-            <div class="register-body">
-                <!-- Messages -->
-                {% if messages %}
-                    {% for message in messages %}
-                        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
-                            <i class="bi bi-{% if message.tags == 'success' %}check-circle{% elif message.tags == 'error' %}x-circle{% else %}info-circle{% endif %} me-2"></i>
-                            {{ message }}
-                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    <div class="register-wrapper">
+        <div class="register-container">
+            <!-- Form Section -->
+            <div class="register-form-section">
+                <div class="register-form-inner">
+                    <div class="logo-section">
+                        <div class="logo-icon">
+                            <i class="bi bi-calculator"></i>
                         </div>
-                    {% endfor %}
-                {% endif %}
-
-                <!-- Registration Form -->
-                <form method="post" novalidate id="registerForm">
-                    {% csrf_token %}
+                        <h1 class="form-title">Daftar Akun</h1>
+                        <p class="form-subtitle">Buat akun baru untuk mengakses FYNCA</p>
+                    </div>
                     
-                    <div class="row">
-                        <div class="col-md-6">
-                            <div class="form-floating mb-3">
-                                <input type="text" class="form-control {% if form.first_name.errors %}is-invalid{% endif %}" 
-                                       id="id_first_name" name="first_name" placeholder="Nama Depan" required
-                                       value="{{ form.first_name.value|default:'' }}">
-                                <label for="id_first_name">
-                                    <i class="bi bi-person me-2"></i>Nama Depan
-                                </label>
-                                {% if form.first_name.errors %}
-                                    <div class="invalid-feedback">
-                                        {{ form.first_name.errors.0 }}
-                                    </div>
-                                {% endif %}
+                    <!-- Messages -->
+                    {% if messages %}
+                        {% for message in messages %}
+                            <div class="alert alert-{% if message.tags == 'error' %}danger{% else %}{{ message.tags }}{% endif %}">
+                                <i class="bi bi-{% if message.tags == 'success' %}check-circle-fill{% elif message.tags == 'error' %}exclamation-circle-fill{% else %}info-circle-fill{% endif %}"></i>
+                                <span>{{ message }}</span>
                             </div>
+                        {% endfor %}
+                    {% endif %}
+                    
+                    {% if form.non_field_errors %}
+                        <div class="alert alert-danger">
+                            <i class="bi bi-exclamation-circle-fill"></i>
+                            <span>{{ form.non_field_errors.0 }}</span>
                         </div>
-                        <div class="col-md-6">
-                            <div class="form-floating mb-3">
-                                <input type="text" class="form-control {% if form.last_name.errors %}is-invalid{% endif %}" 
-                                       id="id_last_name" name="last_name" placeholder="Nama Belakang" required
-                                       value="{{ form.last_name.value|default:'' }}">
-                                <label for="id_last_name">
-                                    <i class="bi bi-person-check me-2"></i>Nama Belakang
-                                </label>
-                                {% if form.last_name.errors %}
-                                    <div class="invalid-feedback">
-                                        {{ form.last_name.errors.0 }}
-                                    </div>
-                                {% endif %}
+                    {% endif %}
+                    
+                    <!-- Registration Form -->
+                    <form method="post" novalidate id="registerForm">
+                        {% csrf_token %}
+                        
+                        <div class="input-row">
+                        <div class="field-group">
+                            <label class="input-label">Nama Depan</label>
+                            <div class="input-wrapper">
+                                <i class="bi bi-person input-icon"></i>
+                                <input type="text" 
+                                       class="form-control {% if form.first_name.errors %}is-invalid{% endif %}" 
+                                       id="id_first_name" 
+                                       name="first_name" 
+                                       placeholder="Nama depan Anda"
+                                       value="{{ form.first_name.value|default:'' }}"
+                                       required>
                             </div>
+                            {% if form.first_name.errors %}
+                                <span class="invalid-feedback">{{ form.first_name.errors.0 }}</span>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="field-group">
+                            <label class="input-label">Nama Belakang</label>
+                            <div class="input-wrapper">
+                                <i class="bi bi-person-check input-icon"></i>
+                                <input type="text" 
+                                       class="form-control {% if form.last_name.errors %}is-invalid{% endif %}" 
+                                       id="id_last_name" 
+                                       name="last_name" 
+                                       placeholder="Nama belakang Anda"
+                                       value="{{ form.last_name.value|default:'' }}"
+                                       required>
+                            </div>
+                            {% if form.last_name.errors %}
+                                <span class="invalid-feedback">{{ form.last_name.errors.0 }}</span>
+                            {% endif %}
                         </div>
                     </div>
                     
-                    <div class="form-floating mb-3">
-                        <input type="text" class="form-control {% if form.username.errors %}is-invalid{% endif %}" 
-                               id="id_username" name="username" placeholder="Username" required
-                               value="{{ form.username.value|default:'' }}">
-                        <label for="id_username">
-                            <i class="bi bi-at me-2"></i>Username
-                        </label>
+                    <div class="field-group">
+                        <label class="input-label">Username</label>
+                        <div class="input-wrapper">
+                            <i class="bi bi-at input-icon"></i>
+                            <input type="text" 
+                                   class="form-control {% if form.username.errors %}is-invalid{% endif %}" 
+                                   id="id_username" 
+                                   name="username" 
+                                   placeholder="Pilih username unik"
+                                   value="{{ form.username.value|default:'' }}"
+                                   required>
+                        </div>
                         {% if form.username.errors %}
-                            <div class="invalid-feedback">
-                                {{ form.username.errors.0 }}
-                            </div>
+                            <span class="invalid-feedback">{{ form.username.errors.0 }}</span>
+                        {% else %}
+                            <span class="form-text">Username akan digunakan untuk login</span>
                         {% endif %}
-                        <div class="form-text">Username harus unik dan akan digunakan untuk login</div>
                     </div>
                     
-                    <div class="form-floating mb-3">
-                        <input type="email" class="form-control {% if form.email.errors %}is-invalid{% endif %}" 
-                               id="id_email" name="email" placeholder="Email" required
-                               value="{{ form.email.value|default:'' }}">
-                        <label for="id_email">
-                            <i class="bi bi-envelope me-2"></i>Email
-                        </label>
+                    <div class="field-group">
+                        <label class="input-label">Email</label>
+                        <div class="input-wrapper">
+                            <i class="bi bi-envelope input-icon"></i>
+                            <input type="email" 
+                                   class="form-control {% if form.email.errors %}is-invalid{% endif %}" 
+                                   id="id_email" 
+                                   name="email" 
+                                   placeholder="email@example.com"
+                                   value="{{ form.email.value|default:'' }}"
+                                   required>
+                        </div>
                         {% if form.email.errors %}
-                            <div class="invalid-feedback">
-                                {{ form.email.errors.0 }}
-                            </div>
+                            <span class="invalid-feedback">{{ form.email.errors.0 }}</span>
                         {% endif %}
                     </div>
                     
-                    <div class="form-floating mb-3">
-                        <input type="password" class="form-control {% if form.password1.errors %}is-invalid{% endif %}" 
-                               id="id_password1" name="password1" placeholder="Password" required>
-                        <label for="id_password1">
-                            <i class="bi bi-lock me-2"></i>Password
-                        </label>
+                    <div class="field-group">
+                        <label class="input-label">Password</label>
+                        <div class="input-wrapper">
+                            <i class="bi bi-lock input-icon"></i>
+                            <input type="password" 
+                                   class="form-control {% if form.password1.errors %}is-invalid{% endif %}" 
+                                   id="id_password1" 
+                                   name="password1" 
+                                   placeholder="Buat password yang kuat"
+                                   required>
+                        </div>
                         {% if form.password1.errors %}
-                            <div class="invalid-feedback">
-                                {{ form.password1.errors.0 }}
-                            </div>
+                            <span class="invalid-feedback">{{ form.password1.errors.0 }}</span>
                         {% endif %}
                         <div class="password-requirements">
                             <strong>Syarat Password:</strong>
@@ -229,50 +499,51 @@
                         </div>
                     </div>
                     
-                    <div class="form-floating mb-4">
-                        <input type="password" class="form-control {% if form.password2.errors %}is-invalid{% endif %}" 
-                               id="id_password2" name="password2" placeholder="Konfirmasi Password" required>
-                        <label for="id_password2">
-                            <i class="bi bi-lock-fill me-2"></i>Konfirmasi Password
-                        </label>
+                    <div class="field-group">
+                        <label class="input-label">Konfirmasi Password</label>
+                        <div class="input-wrapper">
+                            <i class="bi bi-lock-fill input-icon"></i>
+                            <input type="password" 
+                                   class="form-control {% if form.password2.errors %}is-invalid{% endif %}" 
+                                   id="id_password2" 
+                                   name="password2" 
+                                   placeholder="Ulangi password Anda"
+                                   required>
+                        </div>
                         {% if form.password2.errors %}
-                            <div class="invalid-feedback">
-                                {{ form.password2.errors.0 }}
-                            </div>
+                            <span class="invalid-feedback">{{ form.password2.errors.0 }}</span>
                         {% endif %}
                     </div>
-
-                    <!-- Non-field errors -->
-                    {% if form.non_field_errors %}
-                        <div class="alert alert-danger">
-                            <i class="bi bi-exclamation-triangle me-2"></i>
-                            {{ form.non_field_errors.0 }}
-                        </div>
-                    {% endif %}
                     
-                    <button type="submit" class="btn btn-success btn-register w-100 mb-3">
+                    <button type="submit" class="btn-register">
                         <i class="bi bi-person-plus me-2"></i>
                         Daftar Sekarang
                     </button>
-                </form>
-                
-                <hr class="my-4">
-                
-                <div class="text-center">
-                    <p class="mb-3">Sudah punya akun?</p>
-                    <a href="{% url 'login' %}" class="btn btn-primary btn-login-link w-100">
-                        <i class="bi bi-box-arrow-in-right me-2"></i>
-                        Login di Sini
-                    </a>
+                    </form>
+                    
+                    <div class="divider">
+                        <span>atau</span>
+                    </div>
+                    
+                    <div class="login-link">
+                        Sudah punya akun? <a href="{% url 'login' %}">Login di sini</a>
+                    </div>
                 </div>
-                
-                <hr class="my-4">
-                
-                <div class="text-center">
-                    <small class="text-muted">
-                        <i class="bi bi-shield-check me-1"></i>
-                        Data Anda aman dan terenkripsi
-                    </small>
+            </div>
+            
+            <!-- Visual Section -->
+            <div class="register-visual-section">
+                <div class="decorative-circle circle-1"></div>
+                <div class="decorative-circle circle-2"></div>
+                <div class="visual-content">
+                    <div class="visual-icon">
+                        <i class="bi bi-shield-check"></i>
+                    </div>
+                    <h2 class="visual-title">Bergabunglah dengan Kami</h2>
+                    <p class="visual-subtitle">
+                        Mulai kelola keuangan bisnis dengan sistem yang<br>
+                        aman, mudah, dan terpercaya.
+                    </p>
                 </div>
             </div>
         </div>
@@ -280,68 +551,8 @@
 
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-    
     <script>
-        // Auto-focus pada first name field
         document.getElementById('id_first_name').focus();
-        
-        // Password match validation
-        document.getElementById('id_password2').addEventListener('input', function() {
-            const password1 = document.getElementById('id_password1').value;
-            const password2 = this.value;
-            
-            if (password1 !== password2 && password2.length > 0) {
-                this.classList.add('is-invalid');
-                this.setCustomValidity('Password tidak cocok');
-            } else {
-                this.classList.remove('is-invalid');
-                this.setCustomValidity('');
-            }
-        });
-        
-        // Form validation
-        document.getElementById('registerForm').addEventListener('submit', function(e) {
-            const requiredFields = ['id_first_name', 'id_last_name', 'id_username', 'id_email', 'id_password1', 'id_password2'];
-            let isValid = true;
-            
-            requiredFields.forEach(fieldId => {
-                const field = document.getElementById(fieldId);
-                if (!field.value.trim()) {
-                    field.classList.add('is-invalid');
-                    isValid = false;
-                } else {
-                    field.classList.remove('is-invalid');
-                }
-            });
-            
-            const password1 = document.getElementById('id_password1').value;
-            const password2 = document.getElementById('id_password2').value;
-            
-            if (password1 !== password2) {
-                document.getElementById('id_password2').classList.add('is-invalid');
-                isValid = false;
-            }
-            
-            if (!isValid) {
-                e.preventDefault();
-                alert('Harap lengkapi semua field yang wajib diisi dengan benar!');
-                return false;
-            }
-        });
-        
-        // Username validation (no spaces, special chars)
-        document.getElementById('id_username').addEventListener('input', function() {
-            const username = this.value;
-            const validUsername = /^[a-zA-Z0-9_]+$/.test(username);
-            
-            if (username.length > 0 && !validUsername) {
-                this.classList.add('is-invalid');
-                this.setCustomValidity('Username hanya boleh berisi huruf, angka, dan underscore');
-            } else {
-                this.classList.remove('is-invalid');
-                this.setCustomValidity('');
-            }
-        });
     </script>
 </body>
 </html>

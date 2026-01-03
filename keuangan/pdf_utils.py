@@ -206,7 +206,7 @@ def export_neraca_saldo_pdf(neraca_data):
     add_company_header(story, "NERACA SALDO", f"Per tanggal: {datetime.now().strftime('%d/%m/%Y')}")
     
     # Create table data
-    table_data = [['No', 'Kode Akun', 'Nama Akun', 'Debet (Rp)', 'Kredit (Rp)']]
+    table_data = [['No', 'Kode Akun', 'Akun', 'Debet (Rp)', 'Kredit (Rp)']]
     
     no = 1
     total_debet = 0

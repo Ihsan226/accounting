@@ -1,7 +1,7 @@
 {% extends 'base.html' %}
 {% load static %}
 
-{% block title %}Daftar Akun - Akuntansi{% endblock %}
+{% block title %}Daftar Akun - FYNCA{% endblock %}
 
 {% block content %}
 <div class="container-fluid">
@@ -81,7 +81,7 @@
                                 <thead class="table-light">
                                     <tr>
                                         <th width="10%">Kode</th>
-                                        <th width="40%">Nama Akun</th>
+                                        <th width="40%">Akun</th>
                                         <th width="25%">Tipe</th>
                                         <th width="15%">Status</th>
                                         <th width="10%" class="text-center">Aksi</th>
@@ -96,17 +96,17 @@
                                             <td>
                                                 <strong>{{ akun.nama }}</strong>
                                             </td>
-                                            <td>
+                                            <td class="text-center">
                                                 {% if akun.tipe == 'Aktiva Lancar' or akun.tipe == 'Aktiva Tetap' %}
-                                                    <span class="badge bg-primary">{{ akun.tipe }}</span>
+                                                    <span class="badge badge-tipe bg-primary">{{ akun.tipe }}</span>
                                                 {% elif akun.tipe == 'Kewajiban Lancar' or akun.tipe == 'Kewajiban Jangka Panjang' %}
-                                                    <span class="badge bg-warning">{{ akun.tipe }}</span>
+                                                    <span class="badge badge-tipe bg-warning">{{ akun.tipe }}</span>
                                                 {% elif akun.tipe == 'Modal' %}
-                                                    <span class="badge bg-info">{{ akun.tipe }}</span>
+                                                    <span class="badge badge-tipe bg-info">{{ akun.tipe }}</span>
                                                 {% elif akun.tipe == 'Pendapatan' %}
-                                                    <span class="badge bg-success">{{ akun.tipe }}</span>
+                                                    <span class="badge badge-tipe bg-success">{{ akun.tipe }}</span>
                                                 {% else %}
-                                                    <span class="badge bg-danger">{{ akun.tipe }}</span>
+                                                    <span class="badge badge-tipe bg-danger">{{ akun.tipe }}</span>
                                                 {% endif %}
                                             </td>
                                             <td>
@@ -131,14 +131,18 @@
                                                        title="Edit Akun">
                                                         <i class="bi bi-pencil"></i>
                                                     </a>
-                                                        {# Always navigate to confirmation page; that page will explain why deletion may be blocked #}
-                                                        {% with jurnal_count=akun.jurnal_set.count %}
-                                                            <a href="{% url 'hapus_akun' akun.id %}"
-                                                               class="btn btn-sm btn-outline-danger"
-                                                               title="{% if jurnal_count > 0 %}Akun digunakan dalam {{ jurnal_count }} transaksi{% else %}Hapus Akun{% endif %}">
-                                                                <i class="bi bi-trash"></i>
-                                                            </a>
-                                                        {% endwith %}
+                                                    <a href="{% url 'detail_akun' akun.id %}"
+                                                       class="btn btn-sm btn-outline-info"
+                                                       title="Lihat Data Akun">
+                                                        <i class="bi bi-eye"></i>
+                                                    </a>
+                                                    {% with jurnal_count=akun.jurnal_set.count %}
+                                                        <a href="{% url 'hapus_akun' akun.id %}"
+                                                           class="btn btn-sm btn-outline-danger"
+                                                           title="{% if jurnal_count > 0 %}Akun digunakan dalam {{ jurnal_count }} transaksi{% else %}Hapus Akun{% endif %}">
+                                                            <i class="bi bi-trash"></i>
+                                                        </a>
+                                                    {% endwith %}
                                                 </div>
                                             </td>
                                         </tr>
@@ -411,6 +415,42 @@ document.addEventListener('DOMContentLoaded', function() {
     /* Empty state styling */
     [data-theme="dark"] .display-1 {
         color: var(--muted-text) !important;
+    }
+
+    /* Badge width adjustment khusus kolom Tipe: atur ukuran tetap dan override Bootstrap */
+    .table .badge.badge-tipe,
+    .badge.badge-tipe {
+        display: inline-block !important;
+        width: 140px !important;
+        height: 36px !important;
+        box-sizing: border-box !important;
+        padding: 0 !important;
+        line-height: 36px !important;
+        text-align: center !important;
+        font-size: 0.9rem !important;
+        font-weight: 600 !important;
+        border-radius: 999px !important;
+        white-space: nowrap !important;
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
+        vertical-align: middle !important;
+    }
+
+    /* Center-align Akun, Tipe, Status columns (headers + cells) */
+    #akunTable thead th:nth-child(2),
+    #akunTable tbody td:nth-child(2),
+    #akunTable thead th:nth-child(3),
+    #akunTable tbody td:nth-child(3),
+    #akunTable thead th:nth-child(4),
+    #akunTable tbody td:nth-child(4) {
+        text-align: center !important;
+        vertical-align: middle !important;
+    }
+
+    /* Ensure the account name bold text is centered */
+    #akunTable tbody td:nth-child(2) strong {
+        display: inline-block;
+        text-align: center;
     }
 </style>
 {% endblock %}

@@ -555,7 +555,7 @@ def neraca_saldo_excel(request):
     ws.title = "Neraca Saldo"
 
     # Title & subtitle
-    ws.merge_cells(start_row=1, start_column=1, end_row=1, end_column=6)
+    ws.merge_cells(start_row=1, start_column=1, end_row=1, end_column=5)
     t = ws.cell(row=1, column=1, value="NERACA SALDO")
     t.font = Font(size=14, bold=True)
     t.alignment = Alignment(horizontal="center")
@@ -566,11 +566,11 @@ def neraca_saldo_excel(request):
         subtitle.append(f"Periode: {sd_disp} s/d {ed_disp}")
     if jenis_akun:
         subtitle.append(f"Jenis: {jenis_akun}")
-    ws.merge_cells(start_row=2, start_column=1, end_row=2, end_column=6)
+    ws.merge_cells(start_row=2, start_column=1, end_row=2, end_column=5)
     s = ws.cell(row=2, column=1, value=" | ".join(subtitle))
     s.alignment = Alignment(horizontal="center")
 
-    headers = ["#", "Kode Akun", "Nama Akun", "Jenis", "Debet", "Kredit"]
+    headers = ["#", "Kode Akun", "Akun", "Debet", "Kredit"]
     ws.append(headers)
     header_row = 3
     header_fill = PatternFill("solid", fgColor="2563eb")
@@ -580,8 +580,8 @@ def neraca_saldo_excel(request):
     center = Alignment(horizontal="center", vertical="center")
     right = Alignment(horizontal="right", vertical="center")
 
-    widths = {1:6, 2:12, 3:28, 4:12, 5:16, 6:16}
-    for col in range(1, 7):
+    widths = {1:6, 2:12, 3:32, 4:16, 5:16}
+    for col in range(1, 6):
         c = ws.cell(row=header_row, column=col)
         c.fill = header_fill
         c.font = header_font
@@ -606,12 +606,12 @@ def neraca_saldo_excel(request):
         disp_kredit = kredit_sum - debit_sum if kredit_sum > debit_sum else 0
 
         row_idx += 1
-        ws.append([idx, akun.kode, akun.nama, akun.tipe, disp_debet, disp_kredit])
-        for col in range(1, 7):
+        ws.append([idx, akun.kode, akun.nama, disp_debet, disp_kredit])
+        for col in range(1, 6):
             cell = ws.cell(row=row_idx, column=col)
             cell.border = border
-            cell.alignment = right if col in [5,6] else center
-            if col in [5,6]:
+            cell.alignment = right if col in [4,5] else center
+            if col in [4,5]:
                 cell.number_format = currency
 
         total_debet_all += disp_debet
@@ -619,17 +619,17 @@ def neraca_saldo_excel(request):
 
     # Totals
     total_row = row_idx + 1
-    ws.cell(row=total_row, column=4, value="TOTAL").font = Font(bold=True)
-    td = ws.cell(row=total_row, column=5, value=total_debet_all)
-    tk = ws.cell(row=total_row, column=6, value=total_kredit_all)
+    ws.cell(row=total_row, column=3, value="TOTAL").font = Font(bold=True)
+    td = ws.cell(row=total_row, column=4, value=total_debet_all)
+    tk = ws.cell(row=total_row, column=5, value=total_kredit_all)
     td.font = Font(bold=True)
     tk.font = Font(bold=True)
     td.number_format = currency
     tk.number_format = currency
-    for col in range(1, 7):
+    for col in range(1, 6):
         c = ws.cell(row=total_row, column=col)
         c.border = border
-        c.alignment = right if col in [5,6] else center
+        c.alignment = right if col in [4,5] else center
 
     out = BytesIO()
     wb.save(out)

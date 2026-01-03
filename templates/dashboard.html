@@ -1,8 +1,9 @@
 {% extends 'base.html' %}
 {% load static %}
 {% load humanize %}
+{% load custom_filters %}
 
-{% block title %}Dashboard - Akuntansi{% endblock %}
+{% block title %}Dashboard - FYNCA{% endblock %}
 
 {% block content %}
 <!-- Header Section -->
@@ -13,7 +14,7 @@
             Dashboard
         </h1>
         <p class="page-subtitle text-muted mb-0" id="greeting-subtitle">
-            <span id="time-greeting">Selamat datang</span> di sistem akuntansi digital, {{ user.first_name|default:user.username }}!
+            <span id="time-greeting">Selamat datang</span> di FYNCA, {{ user.first_name|default:user.username }}!
         </p>
     </div>
     <div class="d-flex align-items-center gap-3">
@@ -96,7 +97,13 @@
                         <h6 class="card-title mb-0 opacity-75">Total Debet</h6>
                     </div>
                     <div class="stat-number mb-1">
-                        <div class="currency-amount">Rp {{ total_debet|default:"0"|floatformat:0 }}</div>
+                        <div class="currency-amount">
+                            <span class="currency-prefix">Rp</span>
+                            <span class="currency-value">{{ total_debet|default:"0"|short_juta_value }}</span>
+                            {% with unit=total_debet|default:"0"|short_juta_unit %}
+                                {% if unit %}<span class="currency-unit">{{ unit }}</span>{% endif %}
+                            {% endwith %}
+                        </div>
                     </div>
                     <small class="opacity-75">
                         <i class="bi bi-plus-circle"></i> Pemasukan
@@ -120,7 +127,13 @@
                         <h6 class="card-title mb-0 opacity-75">Total Kredit</h6>
                     </div>
                     <div class="stat-number mb-1">
-                        <div class="currency-amount">Rp {{ total_kredit|default:"0"|floatformat:0 }}</div>
+                        <div class="currency-amount">
+                            <span class="currency-prefix">Rp</span>
+                            <span class="currency-value">{{ total_kredit|default:"0"|short_juta_value }}</span>
+                            {% with unit=total_kredit|default:"0"|short_juta_unit %}
+                                {% if unit %}<span class="currency-unit">{{ unit }}</span>{% endif %}
+                            {% endwith %}
+                        </div>
                     </div>
                     <small class="opacity-75">
                         <i class="bi bi-dash-circle"></i> Pengeluaran
@@ -144,7 +157,12 @@
                         <h6 class="card-title mb-0 opacity-75">Total Akun</h6>
                     </div>
                     <div class="stat-number mb-1">
-                        <div class="number-amount">{{ total_akun|default:"0" }}</div>
+                        <div class="number-amount">
+                            <span class="number-value">{{ total_akun|default:"0"|short_juta_value }}</span>
+                            {% with unit=total_akun|default:"0"|short_juta_unit %}
+                                {% if unit %}<span class="number-unit">{{ unit }}</span>{% endif %}
+                            {% endwith %}
+                        </div>
                     </div>
                     <small class="opacity-75">
                         <i class="bi bi-collection"></i> Chart of Accounts
@@ -463,19 +481,19 @@
     }
     
     .bg-gradient-primary {
-        background: linear-gradient(135deg, #3b82f6, #1d4ed8) !important;
+        background: linear-gradient(135deg, var(--primary-color), var(--primary-700), var(--accent-cyan)) !important;
     }
     
     .bg-gradient-success {
-        background: linear-gradient(135deg, #22c55e, #16a34a) !important;
+        background: linear-gradient(135deg, var(--success-color), var(--success-700), var(--accent-cyan)) !important;
     }
     
     .bg-gradient-danger {
-        background: linear-gradient(135deg, #ef4444, #dc2626) !important;
+        background: linear-gradient(135deg, var(--danger-color), var(--danger-700), var(--accent-violet)) !important;
     }
     
     .bg-gradient-warning {
-        background: linear-gradient(135deg, #f59e0b, #d97706) !important;
+        background: linear-gradient(135deg, var(--warning-color), var(--warning-700), var(--accent-violet)) !important;
     }
     
     .dashboard-btn {
@@ -616,6 +634,12 @@
         flex: 1;
         margin-bottom: 0.2rem !important;
     }
+
+    /* Ensure compact values like "Rp 6.1 juta" never get clipped on stat cards */
+    .stat-card .stat-number {
+        max-height: none;
+        overflow: visible;
+    }
     
     /* Statistics Cards Layout Fix */
     .stat-card .card-body {
@@ -634,6 +658,11 @@
         flex-direction: column;
         justify-content: space-between;
         padding-right: 0.5rem;
+    }
+
+    /* Prevent compact amount (e.g. 'juta') from being clipped by parent */
+    .stat-card .flex-grow-1 {
+        overflow: visible;
     }
     
     .stat-card .ms-3 {
@@ -682,6 +711,32 @@
         text-overflow: ellipsis;
         white-space: nowrap;
         line-height: 1.1;
+    }
+
+    .stat-card .currency-amount,
+    .stat-card .number-amount {
+        display: inline-flex;
+        align-items: baseline;
+        gap: 4px;
+        overflow: visible;
+        text-overflow: clip;
+        white-space: nowrap;
+        font-size: clamp(0.88rem, 2.0vw, 1.15rem);
+        letter-spacing: -0.1px;
+    }
+
+    .stat-card .currency-prefix,
+    .stat-card .currency-value,
+    .stat-card .number-value {
+        font-weight: 800;
+        font-variant-numeric: tabular-nums;
+    }
+
+    .stat-card .currency-unit,
+    .stat-card .number-unit {
+        font-weight: 700;
+        font-size: 0.76em;
+        opacity: 0.92;
     }
     
     /* Small text at bottom */
@@ -1653,7 +1708,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const subtitle = document.querySelector('.page-subtitle');
     if (subtitle && !document.getElementById('time-greeting')) {
         const userName = '{{ user.first_name|default:user.username }}';
-        subtitle.textContent = `${greeting} ${icon}, ${userName}! Selamat datang di sistem akuntansi digital`;
+        subtitle.textContent = `${greeting} ${icon}, ${userName}! Selamat datang di FYNCA`;
     }
     
     // Auto-refresh data setiap 5 menit (optional)

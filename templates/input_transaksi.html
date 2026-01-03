@@ -1,6 +1,6 @@
 {% extends 'base.html' %}
 
-{% block title %}Input Transaksi - Akuntansi{% endblock %}
+{% block title %}Input Transaksi - FYNCA{% endblock %}
 
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
@@ -200,13 +200,13 @@
                 <table class="table table-hover" id="transaksiTable">
                     <thead>
                         <tr>
-                            <th>Tanggal</th>
-                            <th>Deskripsi</th>
-                            <th>Akun Debet</th>
-                            <th>Akun Kredit</th>
-                            <th>Jumlah</th>
-                            <th>Aksi</th>
-                        </tr>
+                                <th>Tanggal</th>
+                                <th>Akun Debet</th>
+                                <th>Akun Kredit</th>
+                                <th>Jumlah</th>
+                                <th>Deskripsi</th>
+                                <th>Aksi</th>
+                            </tr>
                     </thead>
                     <tbody>
                         <!-- Rows will be injected by JS -->
@@ -427,6 +427,66 @@
     }
 
     /* Remove custom action button styles, use Bootstrap's outline-primary and outline-danger for consistency with Daftar Akun */
+
+    /* Tidy transaction table text: fixed layout, consistent padding, wrapping and alignment */
+    #transaksiTable {
+        table-layout: fixed;
+        width: 100%;
+    }
+
+    #transaksiTable thead th {
+        text-align: left;
+    }
+
+    #transaksiTable tbody td {
+        padding: 0.6rem 0.9rem !important;
+        vertical-align: middle !important;
+        font-size: 0.95rem !important;
+    }
+
+    /* Column widths (percent-based so responsive) */
+    #transaksiTable td:nth-child(1), #transaksiTable th:nth-child(1) { width: 12% !important; }
+    #transaksiTable td:nth-child(2), #transaksiTable th:nth-child(2) { width: 18% !important; }
+    #transaksiTable td:nth-child(3), #transaksiTable th:nth-child(3) { width: 18% !important; }
+    #transaksiTable td:nth-child(4), #transaksiTable th:nth-child(4) { width: 12% !important; }
+    #transaksiTable td:nth-child(5), #transaksiTable th:nth-child(5) { width: 30% !important; }
+    #transaksiTable td:nth-child(6), #transaksiTable th:nth-child(6) { width: 10% !important; }
+
+    /* Description: clamp to 2 lines with ellipsis for neatness */
+    #transaksiTable .desc {
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        word-break: break-word;
+    }
+
+    /* Account columns: allow wrapping but keep neat */
+    #transaksiTable .acct {
+        white-space: normal;
+        word-break: break-word;
+        max-height: 3.2em;
+        overflow: hidden;
+    }
+
+    /* Amounts: center aligned under header and prevent wrapping */
+    #transaksiTable td.text-center, #transaksiTable th.text-center {
+        text-align: center !important;
+        white-space: nowrap !important;
+    }
+
+    /* Action buttons smaller */
+    #transaksiTable td .btn {
+        padding: 0.22rem 0.4rem !important;
+        line-height: 1 !important;
+    }
+
+    @media (max-width: 768px) {
+        #transaksiTable td:nth-child(5), #transaksiTable th:nth-child(5) { width: 50% !important; }
+        #transaksiTable td:nth-child(2), #transaksiTable td:nth-child(3), #transaksiTable td:nth-child(4) { width: 15% !important; }
+        #transaksiTable td:nth-child(6) { width: 10% !important; }
+    }
 </style>
 {% endblock %}
 
@@ -608,11 +668,11 @@ document.addEventListener('DOMContentLoaded', function() {
 
                 tr.setAttribute('data-tanggal-iso', item.tanggal);
                 tr.innerHTML = `
-                    <td>${formattedDate}</td>
-                    <td>${item.deskripsi}</td>
-                    <td>${akunDebetText}</td>
-                    <td>${akunKreditText}</td>
-                    <td>${jumlahText}</td>
+                    <td class="text-nowrap">${formattedDate}</td>
+                    <td><div class="acct">${akunDebetText}</div></td>
+                    <td><div class="acct">${akunKreditText}</div></td>
+                    <td class="text-center text-nowrap">${jumlahText}</td>
+                    <td><div class="desc">${item.deskripsi || ''}</div></td>
                     <td>
                         <div class="btn-group" role="group">
                             <button class="btn btn-sm btn-outline-primary btn-edit" data-id="${item.id}" title="Edit">
@@ -657,10 +717,10 @@ document.addEventListener('DOMContentLoaded', function() {
                     const row = this.closest('tr');
                     // Use stored ISO date attribute for form population (input[type=date] expects YYYY-MM-DD)
                     const tanggalIso = row.getAttribute('data-tanggal-iso') || '';
-                    const deskripsi = row.children[1].textContent.trim();
-                    const akunDebetText = row.children[2].textContent.trim();
-                    const akunKreditText = row.children[3].textContent.trim();
-                    const jumlahText = row.children[4].textContent.trim().replace(/\.|,/g, '');
+                    const akunDebetText = row.children[1].textContent.trim();
+                    const akunKreditText = row.children[2].textContent.trim();
+                    const jumlahText = row.children[3].textContent.trim().replace(/\.|,/g, '');
+                    const deskripsi = row.children[4].textContent.trim();
 
                     // Populate form fields
                     if (tanggalIso) {

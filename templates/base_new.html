@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}Sistem Akuntansi Digital{% endblock %}</title>
+    <title>{% block title %}FYNCA{% endblock %}</title>
     
     <!-- Initialize theme immediately to prevent flash -->
     <script>
@@ -42,10 +42,87 @@
             box-shadow: 0 2px 20px rgba(59, 130, 246, 0.15);
             border: none;
         }
+
+        /* Brand should not stick to the edge */
+        .navbar .container-fluid {
+            padding-left: 26px;
+            padding-right: 26px;
+        }
+
+        @media (max-width: 576px) {
+            .navbar .container-fluid {
+                padding-left: 16px;
+                padding-right: 16px;
+            }
+        }
         
         .navbar-brand {
             font-weight: 700;
             font-size: 1.4rem;
+            display: inline-flex;
+            align-items: center;
+        }
+
+        .app-brand {
+            display: inline-flex;
+            align-items: baseline;
+            gap: 0.10em;
+            font-weight: 900;
+            font-size: 1.85rem;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            font-family: inherit;
+            -webkit-font-smoothing: antialiased;
+            line-height: 1;
+            padding: 6px 10px;
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.10);
+            border: 1px solid rgba(255, 255, 255, 0.18);
+            backdrop-filter: blur(6px);
+            -webkit-backdrop-filter: blur(6px);
+        }
+
+        .app-brand__core,
+        .app-brand__suffix {
+            text-shadow: 0 10px 22px rgba(0, 0, 0, 0.22);
+        }
+
+        .app-brand__core {
+            color: rgba(255, 255, 255, 0.98);
+        }
+
+        .app-brand__suffix {
+            color: rgba(255, 255, 255, 0.90);
+            letter-spacing: 0.02em;
+        }
+
+        @supports (-webkit-background-clip: text) {
+            .app-brand__core {
+                background: linear-gradient(
+                    100deg,
+                    rgba(255, 255, 255, 1) 0%,
+                    rgba(255, 255, 255, 1) 24%,
+                    rgba(255, 255, 255, 0.82) 52%,
+                    rgba(255, 255, 255, 1) 76%
+                );
+                -webkit-background-clip: text;
+                background-clip: text;
+                -webkit-text-fill-color: transparent;
+            }
+        }
+
+        @supports (background: color-mix(in srgb, white 50%, black)) {
+            .app-brand__core {
+                background: linear-gradient(
+                    90deg,
+                    color-mix(in srgb, white 74%, var(--primary-color)) 0%,
+                    white 36%,
+                    color-mix(in srgb, white 74%, var(--success-color)) 100%
+                );
+                -webkit-background-clip: text;
+                background-clip: text;
+                -webkit-text-fill-color: transparent;
+            }
         }
         
         .navbar-nav .nav-link {
@@ -609,8 +686,10 @@
     <nav class="navbar navbar-expand-lg navbar-dark">
         <div class="container-fluid">
             <a class="navbar-brand" href="/">
-                <i class="bi bi-calculator-fill me-2"></i>
-                Akuntansi
+                <span class="app-brand" aria-label="FYNCA">
+                    <span class="app-brand__core">FYN</span>
+                    <span class="app-brand__suffix">CA</span>
+                </span>
             </a>
             
             {% if user.is_authenticated %}

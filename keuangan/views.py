@@ -1,9 +1,22 @@
+# --- Detail Akun View ---
+from django.contrib.auth.decorators import login_required
+@login_required
+def detail_akun(request, id):
+    akun = get_object_or_404(Akun, id=id, user=request.user)
+    jurnal_list = Jurnal.objects.filter(akun=akun).select_related('transaksi').order_by('-transaksi__tanggal')
+    context = {
+        'akun': akun,
+        'jurnal_list': jurnal_list,
+    }
+    return render(request, 'detail_akun.html', context)
 # Jurnal Umum Excel export (placed after imports to avoid NameError)
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.contrib.auth import logout, login
 from django.contrib.auth.views import LoginView
+from django.utils.decorators import method_decorator
+from django.views.decorators.cache import never_cache
 from django.http import HttpResponse, JsonResponse, HttpResponseBadRequest
 from django.db.models import Sum, Q, Value, DecimalField
 from django.db.models.functions import Coalesce
@@ -24,6 +37,7 @@ from .pdf_utils import (
 from reportlab.lib.pagesizes import A4 # Import ini diperlukan untuk fungsi daftar_akun_pdf
 
 # --- Custom Login View ---
+@method_decorator(never_cache, name='dispatch')
 class CustomLoginView(LoginView):
     """Custom login view dengan redirect untuk user yang sudah login"""
     template_name = 'registration/login.html'
@@ -976,6 +990,7 @@ def transaksi_api_delete(request, id):
     transaksi.delete()
     return JsonResponse({'deleted': True})
 
+@never_cache
 def logout_view(request):
     """Custom logout view that handles both GET and POST requests"""
     from django.contrib.auth import logout

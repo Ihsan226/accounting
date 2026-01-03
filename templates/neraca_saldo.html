@@ -1,6 +1,6 @@
 {% extends 'base.html' %}
 
-{% block title %}Neraca Saldo - Akuntansi{% endblock %}
+{% block title %}Neraca Saldo - FYNCA{% endblock %}
 
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
@@ -71,39 +71,23 @@
                 <thead class="table-primary">
                     <tr>
                         <th width="5%" class="text-center">#</th>
-                        <th width="15%">Kode Akun</th>
-                        <th width="35%">Nama Akun</th>
-                        <th width="12%" class="text-center">Jenis</th>
-                        <th width="16%" class="text-end">Debet (Rp)</th>
-                        <th width="17%" class="text-end">Kredit (Rp)</th>
+                        <th width="20%" class="text-center">Kode Akun</th>
+                        <th width="40%" class="text-center">Akun</th>
+                        <th width="17%" class="text-end">Debet (Rp)</th>
+                        <th width="18%" class="text-end">Kredit (Rp)</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for s in saldo %}
                     <tr class="{% cycle 'table-light' '' %}">
                         <td class="text-center">{{ forloop.counter }}</td>
-                        <td>
+                        <td class="text-center align-middle">
                             <span class="badge bg-secondary">{{ s.akun.kode }}</span>
                         </td>
-                        <td>
+                        <td class="align-middle text-start">
                             <div class="fw-semibold">{{ s.akun.nama }}</div>
                             {% if s.akun.keterangan %}
                                 <small class="text-muted">{{ s.akun.keterangan|truncatechars:50 }}</small>
-                            {% endif %}
-                        </td>
-                        <td class="text-center">
-                            {% if s.akun.jenis == 'Aktiva' %}
-                                <span class="badge bg-success">{{ s.akun.jenis }}</span>
-                            {% elif s.akun.jenis == 'Kewajiban' %}
-                                <span class="badge bg-danger">{{ s.akun.jenis }}</span>
-                            {% elif s.akun.jenis == 'Modal' %}
-                                <span class="badge bg-primary">{{ s.akun.jenis }}</span>
-                            {% elif s.akun.jenis == 'Pendapatan' %}
-                                <span class="badge bg-info">{{ s.akun.jenis }}</span>
-                            {% elif s.akun.jenis == 'Beban' %}
-                                <span class="badge bg-warning">{{ s.akun.jenis }}</span>
-                            {% else %}
-                                <span class="badge bg-secondary">{{ s.akun.jenis }}</span>
                             {% endif %}
                         </td>
                         <td class="text-end">
@@ -125,7 +109,7 @@
                 </tbody>
                 <tfoot class="table-dark">
                     <tr>
-                        <th colspan="4" class="text-end fw-bold">TOTAL KESELURUHAN:</th>
+                        <th colspan="3" class="text-end fw-bold">TOTAL KESELURUHAN:</th>
                         <th class="text-end">
                             <span class="fw-bold text-success">
                                 Rp {{ total_debit|default:0|floatformat:0 }}
@@ -138,7 +122,7 @@
                         </th>
                     </tr>
                     <tr>
-                        <th colspan="4" class="text-end">STATUS NERACA:</th>
+                        <th colspan="3" class="text-end">STATUS NERACA:</th>
                         <th colspan="2" class="text-center">
                             {% if total_debit == total_kredit %}
                                 <span class="badge bg-success fs-6">

@@ -1,0 +1,45 @@
+{% extends 'base.html' %}
+{% block title %}Detail Akun{% endblock %}
+{% block content %}
+<div class="container mt-4">
+    <h2 class="mb-3">Detail Akun</h2>
+    <table class="table table-bordered" style="max-width:900px;font-size:0.97rem;">
+        <tr>
+            <th class="text-start" style="width: 120px;">Kode</th>
+            <td class="text-start" colspan="4">{{ akun.kode }}</td>
+        </tr>
+        <tr>
+            <th class="text-start">Nama Akun</th>
+            <td class="text-start" colspan="4">{{ akun.nama }}</td>
+        </tr>
+        <tr>
+            <th class="text-start">Tipe</th>
+            <td class="text-start" colspan="4">{{ akun.tipe }}</td>
+        </tr>
+        <tr class="table-primary">
+            <th colspan="5" class="text-center">Daftar Transaksi Terkait</th>
+        </tr>
+        <tr class="table-primary">
+            <th style="width:50px;" class="text-center">No</th>
+            <th style="width:140px;" class="text-center">Tanggal</th>
+            <th>Deskripsi</th>
+            <th style="width:140px;" class="text-end">Debet</th>
+            <th style="width:140px;" class="text-end">Kredit</th>
+        </tr>
+        {% for j in jurnal_list %}
+        <tr>
+            <td class="text-center">{{ forloop.counter }}</td>
+            <td class="text-center">{{ j.transaksi.tanggal }}</td>
+            <td>{{ j.transaksi.deskripsi }}</td>
+            <td class="text-end">{{ j.debit|floatformat:0 }}</td>
+            <td class="text-end">{{ j.kredit|floatformat:0 }}</td>
+        </tr>
+        {% empty %}
+        <tr>
+            <td colspan="5" class="text-center">Tidak ada transaksi</td>
+        </tr>
+        {% endfor %}
+    </table>
+    <a href="{% url 'daftar_akun' %}" class="btn btn-secondary mt-3">Kembali</a>
+</div>
+{% endblock %}

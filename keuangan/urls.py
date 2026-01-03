@@ -26,6 +26,7 @@ urlpatterns = [
     path('akun/pdf/', views.daftar_akun_pdf, name='daftar_akun_pdf'),
     path('akun/excel/', views.daftar_akun_excel, name='daftar_akun_excel'),
     path('akun/tambah/', views.tambah_akun, name='tambah_akun'),
+    path('akun/detail/<int:id>/', views.detail_akun, name='detail_akun'),
     path('akun/edit/<int:id>/', views.edit_akun, name='edit_akun'),
     path('akun/hapus/<int:id>/', views.hapus_akun, name='hapus_akun'),
     # API endpoints for ajax CRUD on transaksi
