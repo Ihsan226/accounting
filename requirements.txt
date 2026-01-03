@@ -1,7 +1,13 @@
-asgiref==3.9.1
-charset-normalizer==3.4.2
 Django==5.2.4
-pillow==11.3.0
-reportlab==4.4.2
+asgiref==3.9.1
 sqlparse==0.5.3
 tzdata==2025.2
+
+pillow==11.3.0
+reportlab==4.4.2
+charset-normalizer==3.4.2
+
+gunicorn
+whitenoise
+dj-database-url
+psycopg2-binary
